@@ -8,8 +8,8 @@ export const SANDWICH_ESTILO_OPTIONS: {
   label: string;
   value: SandwichEstilo;
 }[] = [
-  { label: "Completo", value: "completo" },
   { label: "Italiano", value: "italiano" },
+  { label: "Completo", value: "completo" },
 ];
 
 export function isSandwichEstiloCombo(

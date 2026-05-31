@@ -110,9 +110,9 @@ export function getVariantes(producto: Producto, categoriaId?: string): PrecioVa
 
   if (categoriaId === 'sandwiches' && isPreciosSandwich(precios)) {
     const ordenCarne: (keyof PreciosSandwich)[] = [
-      'lomito',
       'churrasco',
       'mechada',
+      'lomito',
     ];
     for (const key of ordenCarne) {
       const opcion = precios[key];
