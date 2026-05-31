@@ -73,27 +73,7 @@ export default function Home() {
       <Header searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       {/* Spacer for fixed header */}
-      <div className="h-[140px] sm:h-[130px]" />
-
-      {/* Quick Info Bar */}
-      <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm">
-            <div className="flex items-center gap-1.5 text-marron-oscuro/70">
-              <Flame className="w-4 h-4 text-naranja-mc" aria-hidden="true" />
-              <span>Sabores Auténticos</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-marron-oscuro/70">
-              <Clock className="w-4 h-4 text-naranja-mc" aria-hidden="true" />
-              <span>Entrega Rápida</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-marron-oscuro/70">
-              <Award className="w-4 h-4 text-naranja-mc" aria-hidden="true" />
-              <span>Recetas Caseras</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="h-[72px] sm:h-[80px]" />
 
       {/* Search Results Counter */}
       <AnimatePresence>
@@ -154,6 +134,25 @@ export default function Home() {
                   onCategoryChange={scrollToCategory}
                 />
               )}
+              {/* Quick Info Bar — debajo de las categorías, se esconde al scrollear */}
+              <div className="px-4 sm:px-6 lg:px-8 py-3 -mx-4 sm:-mx-6 lg:-mx-8">
+                <div className="max-w-7xl mx-auto">
+                  <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm">
+                    <div className="flex items-center gap-1.5 text-marron-oscuro/70">
+                      <Flame className="w-4 h-4 text-naranja-mc" aria-hidden="true" />
+                      <span>Sabores Auténticos</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-marron-oscuro/70">
+                      <Clock className="w-4 h-4 text-naranja-mc" aria-hidden="true" />
+                      <span>Entrega Rápida</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-marron-oscuro/70">
+                      <Award className="w-4 h-4 text-naranja-mc" aria-hidden="true" />
+                      <span>Recetas Caseras</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               {filteredMenu.map((categoria) => (
                 <MenuSection
                   key={categoria.id}
