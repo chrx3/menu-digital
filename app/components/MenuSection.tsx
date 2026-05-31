@@ -40,7 +40,7 @@ export default function MenuSection({
       >
         <header className="mb-6 pb-3 border-b-2 border-naranja-mc/25">
           <h2
-            className="text-2xl sm:text-3xl font-bold text-naranja-mc text-pretty"
+            className="text-2xl sm:text-3xl font-bold text-naranja-texto text-pretty"
             style={{
               fontFamily: "var(--font-fredoka), system-ui, sans-serif",
             }}

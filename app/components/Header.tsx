@@ -107,7 +107,7 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
                       onSearchChange("");
                       desktopSearchRef.current?.focus();
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-marron-oscuro/50 hover:text-marron-oscuro hover:bg-marron-oscuro/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-marron-oscuro/60 hover:text-marron-oscuro hover:bg-marron-oscuro/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
                     whileTap={{ scale: 0.85 }}
                     aria-label="Limpiar búsqueda"
                   >

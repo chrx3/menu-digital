@@ -85,7 +85,7 @@ export default function Home() {
             className="px-4 sm:px-6 lg:px-8 pb-4"
           >
             <div className="max-w-7xl mx-auto">
-              <p className="text-naranja-mc text-sm font-medium">
+              <p className="text-naranja-texto text-sm font-medium">
                 {isSearchPending ? (
                   "Buscando…"
                 ) : (
@@ -180,7 +180,7 @@ export default function Home() {
             exit={{ opacity: 0, scale: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-24 right-6 z-30 p-3 bg-[#F5821F] text-[#3D1F00] rounded-full shadow-lg lg:hidden"
+            className="fixed bottom-32 right-6 z-30 p-3 bg-[#F5821F] text-[#3D1F00] rounded-full shadow-lg lg:hidden"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >

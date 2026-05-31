@@ -171,7 +171,7 @@ export default function ProductCard({
         <div className="relative z-10 flex flex-1 flex-col p-5">
           {/* Título + ingredientes en columna */}
           <div className="mb-3 shrink-0 pr-[6.75rem] sm:pr-32 lg:pr-36">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-naranja-mc mb-0.5 leading-none">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-naranja-texto mb-0.5 leading-none">
               {categoria.titulo}
             </p>
             <h3
@@ -199,14 +199,14 @@ export default function ProductCard({
           {/* Incluye tags */}
           {producto.incluye && producto.incluye.length > 0 && (
             <div className="mb-4">
-              <p className="text-xs text-[#F5821F]/80 font-medium mb-1.5">
+              <p className="text-xs text-naranja-texto/90 font-medium mb-1.5">
                 Incluye:
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {producto.incluye.map((item) => (
                   <span
                     key={item}
-                    className="px-2 py-0.5 bg-[#F5821F]/10 text-[#F5821F] text-xs rounded-full"
+                    className="px-2 py-0.5 bg-[#F5821F]/10 text-naranja-texto text-xs rounded-full"
                   >
                     {item}
                   </span>
@@ -318,8 +318,8 @@ export default function ProductCard({
               className="mb-4 p-2 bg-[#F5821F]/8 rounded-lg border border-[#F5821F]/20"
             >
               <div className="flex items-center gap-2">
-                <Tag className="w-3.5 h-3.5 text-[#F5821F]" />
-                <span className="text-[#F5821F] text-xs font-bold">
+                <Tag className="w-3.5 h-3.5 text-naranja-texto" />
+                <span className="text-naranja-texto text-xs font-bold">
                   Promo 2x: {formatPrice(promo2x)}
                 </span>
               </div>
@@ -331,7 +331,7 @@ export default function ProductCard({
           <div className="mt-auto flex shrink-0 items-center justify-between gap-3 pt-3">
             <div>
               <span
-                className="text-xl font-bold text-[#F5821F]"
+                className="text-xl font-bold text-naranja-texto"
                 style={{
                   fontFamily: "var(--font-fredoka), system-ui, sans-serif",
                 }}
@@ -360,7 +360,7 @@ export default function ProductCard({
                     </motion.button>
                     <motion.span
                       key={quantity}
-                      initial={{ scale: 1.3, color: "#F5821F" }}
+                      initial={{ scale: 1.3, color: "#994500" }}
                       animate={{ scale: 1, color: "#3D1F00" }}
                       className="px-2 text-[#3D1F00] font-bold min-w-[1.5rem] text-center text-sm"
                     >

@@ -10,7 +10,6 @@ import {
   Trash2,
   ShoppingCart,
   MessageCircle,
-  ChevronUp,
 } from "lucide-react";
 import { CartItem } from "../types";
 
@@ -63,70 +62,55 @@ export default function Cart({
 
   return (
     <>
-      {/* Mobile Floating Cart Button — circular, debajo del chevrón up */}
-      <motion.button
+      {/* Mobile Floating Cart Button — circular con burbuja de total */}
+      <motion.div
         initial={{ opacity: 0, scale: 0 }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          ...(cartPulse && { scale: [1, 1.25, 1] }),
-        }}
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-14 right-4 z-40 lg:hidden w-14 h-14 bg-gradient-to-br from-naranja-mc to-naranja-claro rounded-full shadow-xl shadow-naranja-mc/40 flex items-center justify-center"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        data-cart-fly-target
+        animate={{ opacity: 1, scale: 1 }}
+        className="fixed bottom-14 right-4 z-40 lg:hidden flex items-center gap-3"
       >
-        <ShoppingCart className="w-6 h-6 text-white" />
+        {/* Burbuja de total */}
         <AnimatePresence>
           {itemCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="absolute -top-1 -right-1 bg-marron-oscuro text-naranja-mc text-xs font-bold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1 shadow-md"
+            <motion.div
+              initial={{ opacity: 0, x: 10, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.8 }}
+              className="relative bg-marron-oscuro/90 backdrop-blur-sm text-naranja-mc font-bold text-sm px-3 py-1.5 rounded-xl border border-naranja-mc/30 shadow-lg whitespace-nowrap"
+              style={{
+                fontFamily: "var(--font-fredoka), system-ui, sans-serif",
+              }}
             >
-              {itemCount}
-            </motion.span>
+              {formatPrice(total)}
+              <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-marron-oscuro/90 backdrop-blur-sm rotate-45 shadow-lg" />
+            </motion.div>
           )}
         </AnimatePresence>
-      </motion.button>
 
-      {/* Mobile Bottom Bar — solo cuando hay productos */}
-      {itemCount > 0 && (
-        <motion.div
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-marron-oscuro via-marron-medio/98 to-marron-medio/95 backdrop-blur-lg lg:hidden"
+        <motion.button
+          onClick={() => setIsOpen(true)}
+          animate={{
+            ...(cartPulse && { scale: [1, 1.25, 1] }),
+          }}
+          className="relative w-14 h-14 bg-gradient-to-br from-naranja-mc to-naranja-claro rounded-full shadow-xl shadow-naranja-mc/40 flex items-center justify-center shrink-0"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          data-cart-fly-target
         >
-          <motion.button
-            onClick={() => setIsOpen(true)}
-            className="w-full flex items-center justify-between px-4 py-3"
-            whileTap={{ scale: 0.98 }}
-            data-cart-fly-target
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <ShoppingCart className="w-6 h-6 text-[#F5821F]" />
-              </div>
-              <span className="text-white font-semibold">
-                {itemCount} {itemCount === 1 ? "producto" : "productos"}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className="text-xl font-bold text-[#F5821F]"
-                style={{
-                  fontFamily: "var(--font-fredoka), system-ui, sans-serif",
-                }}
+          <ShoppingCart className="w-6 h-6 text-white" />
+          <AnimatePresence>
+            {itemCount > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="absolute -top-1 -right-1 bg-marron-oscuro text-naranja-mc text-xs font-bold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1 shadow-md"
               >
-                {formatPrice(total)}
-              </span>
-              <ChevronUp className="w-5 h-5 text-white/60" />
-            </div>
-          </motion.button>
-        </motion.div>
-      )}
+                {itemCount}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </motion.div>
 
       {/* Desktop Side Button */}
       <motion.button
@@ -300,7 +284,7 @@ export default function Cart({
                               </motion.button>
                             </div>
 
-                            <span className="text-[#F5821F] font-bold text-sm">
+                            <span className="text-naranja-texto font-bold text-sm">
                               {formatPrice(calculateItemSubtotal(item))}
                             </span>
                           </div>

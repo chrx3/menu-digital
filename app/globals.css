@@ -14,6 +14,7 @@
     --crema-oscuro: #f5e6d0;
     --crema-profundo: #edd8c0;
     --blanco: #ffffff;
+    --naranja-texto: #994500;
 }
 
 @theme inline {
@@ -28,6 +29,7 @@
     --color-crema: var(--crema);
     --color-crema-oscuro: var(--crema-oscuro);
     --color-crema-profundo: var(--crema-profundo);
+    --color-naranja-texto: var(--naranja-texto);
     --font-sans: var(--font-poppins);
     --font-display: var(--font-fredoka);
 }

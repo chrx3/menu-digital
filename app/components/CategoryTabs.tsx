@@ -21,7 +21,7 @@ export default function CategoryTabs({
       aria-label="Categorías del menú"
     >
       <div className="max-w-7xl mx-auto">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-marron-oscuro/45 mb-2 sm:hidden">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-marron-oscuro/60 mb-2 sm:hidden">
           Estás viendo
         </p>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
