@@ -12,7 +12,6 @@ interface HeaderProps {
 
 export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [mobileLogoIndex, setMobileLogoIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const desktopSearchRef = useRef<HTMLInputElement>(null);
@@ -20,12 +19,6 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
   const mobileLogos = ["/mctommy1.webp", "/mctommy2.webp"] as const;
 
   const hasSearch = searchTerm.trim().length > 0;
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     if (isSearchOpen && searchRef.current) {
@@ -46,11 +39,7 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,box-shadow] duration-300 ${
-          scrolled || hasSearch
-            ? "bg-marron-oscuro/95 backdrop-blur-lg shadow-lg shadow-marron-medio/30"
-            : "bg-gradient-to-b from-marron-oscuro/80 to-transparent"
-        }`}
+        className="fixed top-0 left-0 right-0 z-50 bg-marron-oscuro/95 backdrop-blur-lg shadow-lg shadow-marron-medio/30"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[72px] sm:h-[80px]">
