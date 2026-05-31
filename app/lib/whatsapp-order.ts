@@ -7,7 +7,7 @@ const TIPO_PLATO: Record<string, string> = {
   fajitas: "Fajita",
   pollo_asado: "Pollo Asado",
   sandwiches: "Sándwich",
-  vienesas_y_ases: "Vienesa / As",
+  vienesas_y_ases: "Completo",
   snacks: "Extra",
 };
 
@@ -28,11 +28,11 @@ export function formatCartItemDisplayName(item: CartItem): string {
     case "fajitas":
       return `${tipo} ${item.productoNombre}${variante}`;
     case "pollo_asado":
-      return `${tipo}: ${item.productoNombre}`;
+      return `${item.productoNombre}`;
     case "sandwiches":
       return formatSandwichDisplayName(item.productoNombre, item.variante);
     case "vienesas_y_ases":
-      return `${tipo}: ${item.productoNombre}${variante}`;
+      return `${item.productoNombre}${variante}`;
     case "snacks":
       return `${item.productoNombre}`;
     default:
