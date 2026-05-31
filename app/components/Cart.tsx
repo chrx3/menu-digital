@@ -63,55 +63,70 @@ export default function Cart({
 
   return (
     <>
-      {/* Mobile Bottom Bar */}
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-marron-oscuro via-marron-medio/98 to-marron-medio/95 backdrop-blur-lg lg:hidden"
+      {/* Mobile Floating Cart Button — circular, debajo del chevrón up */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          ...(cartPulse && { scale: [1, 1.25, 1] }),
+        }}
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-14 right-4 z-40 lg:hidden w-14 h-14 bg-gradient-to-br from-naranja-mc to-naranja-claro rounded-full shadow-xl shadow-naranja-mc/40 flex items-center justify-center"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        data-cart-fly-target
       >
-        <motion.button
-          onClick={() => setIsOpen(true)}
-          className="w-full flex items-center justify-between px-4 py-3"
-          whileTap={{ scale: 0.98 }}
-          data-cart-fly-target
-          animate={cartPulse ? { scale: [1, 1.15, 1] } : {}}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <ShoppingCart className="w-6 h-6 text-[#F5821F]" />
-              <AnimatePresence>
-                {itemCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="absolute -top-2 -right-2 bg-[#F5821F] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-                  >
-                    {itemCount}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </div>
-            <span className="text-white font-semibold">
-              {itemCount === 0
-                ? "Carrito vacío"
-                : `${itemCount} ${itemCount === 1 ? "producto" : "productos"}`}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span
-              className="text-xl font-bold text-[#F5821F]"
-              style={{
-                fontFamily: "var(--font-fredoka), system-ui, sans-serif",
-              }}
+        <ShoppingCart className="w-6 h-6 text-white" />
+        <AnimatePresence>
+          {itemCount > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              className="absolute -top-1 -right-1 bg-marron-oscuro text-naranja-mc text-xs font-bold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1 shadow-md"
             >
-              {formatPrice(total)}
-            </span>
-            <ChevronUp className="w-5 h-5 text-white/60" />
-          </div>
-        </motion.button>
-      </motion.div>
+              {itemCount}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* Mobile Bottom Bar — solo cuando hay productos */}
+      {itemCount > 0 && (
+        <motion.div
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-marron-oscuro via-marron-medio/98 to-marron-medio/95 backdrop-blur-lg lg:hidden"
+        >
+          <motion.button
+            onClick={() => setIsOpen(true)}
+            className="w-full flex items-center justify-between px-4 py-3"
+            whileTap={{ scale: 0.98 }}
+            data-cart-fly-target
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <ShoppingCart className="w-6 h-6 text-[#F5821F]" />
+              </div>
+              <span className="text-white font-semibold">
+                {itemCount} {itemCount === 1 ? "producto" : "productos"}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className="text-xl font-bold text-[#F5821F]"
+                style={{
+                  fontFamily: "var(--font-fredoka), system-ui, sans-serif",
+                }}
+              >
+                {formatPrice(total)}
+              </span>
+              <ChevronUp className="w-5 h-5 text-white/60" />
+            </div>
+          </motion.button>
+        </motion.div>
+      )}
 
       {/* Desktop Side Button */}
       <motion.button

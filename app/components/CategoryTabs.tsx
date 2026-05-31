@@ -32,7 +32,7 @@ export default function CategoryTabs({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`
-                snap-start shrink-0 px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-[background-color,color,border-color,box-shadow,transform] duration-300
+                 snap-start shrink-0 px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-[background-color,color,border-color,box-shadow,transform] duration-300
                 whitespace-nowrap relative overflow-hidden
                 ${
                   activeCategory === categoria.id

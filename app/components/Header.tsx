@@ -15,8 +15,11 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileLogoIndex, setMobileLogoIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
+  const desktopSearchRef = useRef<HTMLInputElement>(null);
 
   const mobileLogos = ["/mctommy1.webp", "/mctommy2.webp"] as const;
+
+  const hasSearch = searchTerm.trim().length > 0;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -44,7 +47,7 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,box-shadow] duration-300 ${
-          scrolled
+          scrolled || hasSearch
             ? "bg-marron-oscuro/95 backdrop-blur-lg shadow-lg shadow-marron-medio/30"
             : "bg-gradient-to-b from-marron-oscuro/80 to-transparent"
         }`}
@@ -92,6 +95,7 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-naranja-mc/60" aria-hidden="true" />
                 <input
+                  ref={desktopSearchRef}
                   type="search"
                   name="menu-search"
                   autoComplete="off"
@@ -100,11 +104,27 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
                   placeholder="Buscar en el menú…"
                   value={searchTerm}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-crema/90 border-2 border-naranja-mc/30 rounded-xl text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:outline-none focus-visible:border-naranja-mc focus-visible:ring-2 focus-visible:ring-naranja-mc/20 transition-[border-color,box-shadow] font-medium"
+                  className="w-full pl-10 pr-10 py-2.5 bg-crema/90 border-2 border-naranja-mc/30 rounded-xl text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:outline-none focus-visible:border-naranja-mc focus-visible:ring-2 focus-visible:ring-naranja-mc/20 transition-[border-color,box-shadow] font-medium"
                   style={{
                     fontFamily: "var(--font-poppins), system-ui, sans-serif",
                   }}
                 />
+                {hasSearch && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0 }}
+                    onClick={() => {
+                      onSearchChange("");
+                      desktopSearchRef.current?.focus();
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-marron-oscuro/50 hover:text-marron-oscuro hover:bg-marron-oscuro/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
+                    whileTap={{ scale: 0.85 }}
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X className="w-5 h-5" />
+                  </motion.button>
+                )}
               </div>
             </div>
 
@@ -113,12 +133,12 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
               {/* Mobile Search Toggle */}
               <motion.button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className="md:hidden p-2.5 rounded-xl bg-naranja-mc/15 text-naranja-mc hover:bg-naranja-mc/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
+                className="md:hidden p-3 rounded-xl bg-naranja-mc/15 text-naranja-mc hover:bg-naranja-mc/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
                 whileTap={{ scale: 0.9 }}
                 aria-label={isSearchOpen ? "Cerrar búsqueda" : "Buscar"}
               >
                 {isSearchOpen ? (
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 ) : (
                   <Search className="w-5 h-5" />
                 )}
@@ -149,11 +169,27 @@ export default function Header({ searchTerm, onSearchChange }: HeaderProps) {
                 placeholder="Buscar en el menú…"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-crema border-2 border-naranja-mc/30 rounded-xl text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:outline-none focus-visible:border-naranja-mc focus-visible:ring-2 focus-visible:ring-naranja-mc/20 transition-[border-color,box-shadow] font-medium"
+                className="w-full pl-10 pr-10 py-2.5 bg-crema border-2 border-naranja-mc/30 rounded-xl text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:outline-none focus-visible:border-naranja-mc focus-visible:ring-2 focus-visible:ring-naranja-mc/20 transition-[border-color,box-shadow] font-medium"
                 style={{
                   fontFamily: "var(--font-poppins), system-ui, sans-serif",
                 }}
               />
+              {hasSearch && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  onClick={() => {
+                    onSearchChange("");
+                    searchRef.current?.focus();
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-marron-oscuro/50 hover:text-marron-oscuro hover:bg-marron-oscuro/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
+                  whileTap={{ scale: 0.85 }}
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              )}
             </div>
           </motion.div>
         )}
