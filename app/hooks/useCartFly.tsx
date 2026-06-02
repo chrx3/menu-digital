@@ -1,15 +1,11 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { animate, motion, useMotionValue } from "framer-motion";
 import { ShoppingCart } from "lucide-react";
 
 const CART_TARGET_SELECTOR = "[data-cart-fly-target]";
-const BALL_SIZE = 44;
-const FLY_DURATION = 0.7;
-const FLY_MS = FLY_DURATION * 1000 + 120;
-
 type FlyRequest = {
   id: string;
   fromLeft: number;
@@ -40,16 +36,24 @@ function lerp(a: number, b: number, t: number) {
 function FlyBall({
   fly,
   onDone,
+  ballSize,
+  duration,
+  disabled,
 }: {
   fly: FlyRequest;
   onDone: (id: string) => void;
+  ballSize: number;
+  duration: number;
+  disabled: boolean;
 }) {
   const doneRef = useRef(false);
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
-  const originX = fly.fromLeft + fly.fromWidth / 2 - BALL_SIZE / 2;
-  const originY = fly.fromTop + fly.fromHeight / 2 - BALL_SIZE / 2;
+  const originX = fly.fromLeft + fly.fromWidth / 2 - ballSize / 2;
+  const originY = fly.fromTop + fly.fromHeight / 2 - ballSize / 2;
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -65,7 +69,11 @@ function FlyBall({
       onDoneRef.current(fly.id);
     };
 
-    const safety = window.setTimeout(finish, FLY_MS);
+    if (disabled) {
+      finish();
+      return;
+    }
+    const safety = window.setTimeout(finish, duration * 1000 + 120);
 
     const target = getVisibleCartTarget();
     if (!target) {
@@ -76,8 +84,8 @@ function FlyBall({
     const targetRect = target.getBoundingClientRect();
     const sx = originX;
     const sy = originY;
-    const ex = targetRect.left + targetRect.width / 2 - BALL_SIZE / 2;
-    const ey = targetRect.top + targetRect.height / 2 - BALL_SIZE / 2;
+    const ex = targetRect.left + targetRect.width / 2 - ballSize / 2;
+    const ey = targetRect.top + targetRect.height / 2 - ballSize / 2;
 
     const distance = Math.hypot(ex - sx, ey - sy);
     const arcLift = Math.min(88, Math.max(36, distance * 0.42));
@@ -90,7 +98,7 @@ function FlyBall({
     opacity.set(1);
 
     const controls = animate(0, 1, {
-      duration: FLY_DURATION,
+      duration,
       ease: [0.33, 0, 0.2, 1],
       onUpdate: (t) => {
         x.set(quad(t, sx, cx, ex) - sx);
@@ -105,14 +113,14 @@ function FlyBall({
       window.clearTimeout(safety);
       controls.stop();
     };
-  }, [fly.id, opacity, originX, originY, scale, x, y]);
+  }, [ballSize, disabled, duration, fly.id, opacity, originX, originY, scale, x, y]);
 
   return (
     <motion.div
       className="pointer-events-none fixed z-[200] flex items-center justify-center rounded-full bg-[#F5821F] text-white shadow-lg shadow-[#F5821F]/40 will-change-transform"
       style={{
-        width: BALL_SIZE,
-        height: BALL_SIZE,
+        width: ballSize,
+        height: ballSize,
         left: originX,
         top: originY,
         x,
@@ -126,12 +134,10 @@ function FlyBall({
   );
 }
 
-export function useCartFly() {
+export function useCartFly({ duration = 0.7, ballSize = 44, disabled = false }: { duration?: number; ballSize?: number; disabled?: boolean } = {}) {
   const [flies, setFlies] = useState<FlyRequest[]>([]);
   const [cartPulse, setCartPulse] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
 
   const pulseCart = useCallback(() => {
     setCartPulse(true);
@@ -166,13 +172,13 @@ export function useCartFly() {
         ? createPortal(
             <>
               {flies.map((fly) => (
-                <FlyBall key={fly.id} fly={fly} onDone={completeFly} />
+                <FlyBall key={fly.id} fly={fly} onDone={completeFly} ballSize={ballSize} duration={duration} disabled={disabled} />
               ))}
             </>,
             document.body,
           )
         : null,
-    [flies, mounted, completeFly],
+    [ballSize, completeFly, disabled, duration, flies, mounted],
   );
 
   return { flyToCart, cartPulse, FlyPortal };

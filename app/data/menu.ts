@@ -53,7 +53,7 @@ const rawMenu: Categoria[] = [
       { nombre: '01. Pollo Entero', incluye: ['Pollo entero solo'], precio: 13500 },
       { nombre: '02. 1/2 Pollo', incluye: ['Medio pollo solo'], precio: 7500 },
       { nombre: '03. Pollo Entero + Caja de Papas', incluye: ['Pollo entero', 'Caja de papas completas'], precio: 18000 },
-      { nombre: '04. Pollo Entero + C. Papas + Bebida 2 Lt', incluye: ['Pollo entero', 'Caja de papas', 'Bextible 2 Litros'], precio: 20000 },
+      { nombre: '04. Pollo Entero + C. Papas + Bebida 2 Lt', incluye: ['Pollo entero', 'Caja de papas', 'Bebible 2 Litros'], precio: 20000 },
       { nombre: '05. 1/2 Pollo + Papa Mediana', incluye: ['Medio pollo', 'Papas fritas medianas'], precio: 9000 },
       { nombre: '06. 1/2 Pollo + Papa Grande', incluye: ['Medio pollo', 'Papas fritas grandes'], precio: 10500 },
       { nombre: '07. 1/2 Pollo + Caja de Papas', incluye: ['Medio pollo', 'Caja de papas familiar'], precio: 12500 },

@@ -1,20 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { CartItem } from '../types';
-import { formatWhatsAppOrder } from '../lib/whatsapp-order';
+import { useState, useCallback } from "react";
+import { CartItem } from "../types";
+import {
+  formatWhatsAppOrder,
+  type WhatsAppConfig,
+} from "../lib/whatsapp-order";
 
-export function useCart() {
+export function useCart(config?: WhatsAppConfig & { disabled?: boolean }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const addItem = useCallback((item: Omit<CartItem, 'id' | 'cantidad'>) => {
+  const addItem = useCallback((item: Omit<CartItem, "id" | "cantidad">) => {
     setItems((prev) => {
       const existingIndex = prev.findIndex(
         (i) =>
           i.categoriaId === item.categoriaId &&
           i.productoNombre === item.productoNombre &&
-          i.variante === item.variante
+          i.variante === item.variante,
       );
 
       if (existingIndex >= 0) {
@@ -47,7 +50,7 @@ export function useCart() {
       return;
     }
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, cantidad } : item))
+      prev.map((item) => (item.id === id ? { ...item, cantidad } : item)),
     );
   }, []);
 
@@ -55,7 +58,6 @@ export function useCart() {
     setItems([]);
   }, []);
 
-  // Calcular subtotal de un item considerando promo 2x
   const calculateItemSubtotal = useCallback((item: CartItem): number => {
     if (item.promo2x && item.cantidad >= 2) {
       const pairs = Math.floor(item.cantidad / 2);
@@ -65,33 +67,58 @@ export function useCart() {
     return item.precio * item.cantidad;
   }, []);
 
-  const total = items.reduce((sum, item) => sum + calculateItemSubtotal(item), 0);
-
+  const total = items.reduce(
+    (sum, item) => sum + calculateItemSubtotal(item),
+    0,
+  );
   const itemCount = items.reduce((sum, item) => sum + item.cantidad, 0);
 
-  const getItemQuantity = useCallback((categoriaId: string, productoNombre: string, variante: string) => {
-    const item = items.find(
-      (i) =>
-        i.categoriaId === categoriaId &&
-        i.productoNombre === productoNombre &&
-        i.variante === variante
-    );
-    return item?.cantidad || 0;
-  }, [items]);
+  const getItemQuantity = useCallback(
+    (categoriaId: string, productoNombre: string, variante: string) => {
+      const item = items.find(
+        (i) =>
+          i.categoriaId === categoriaId &&
+          i.productoNombre === productoNombre &&
+          i.variante === variante,
+      );
+      return item?.cantidad || 0;
+    },
+    [items],
+  );
 
-  const getItemId = useCallback((categoriaId: string, productoNombre: string, variante: string) => {
-    const item = items.find(
-      (i) =>
-        i.categoriaId === categoriaId &&
-        i.productoNombre === productoNombre &&
-        i.variante === variante
-    );
-    return item?.id;
-  }, [items]);
+  const getItemId = useCallback(
+    (categoriaId: string, productoNombre: string, variante: string) => {
+      const item = items.find(
+        (i) =>
+          i.categoriaId === categoriaId &&
+          i.productoNombre === productoNombre &&
+          i.variante === variante,
+      );
+      return item?.id;
+    },
+    [items],
+  );
 
   const generateWhatsAppMessage = useCallback(() => {
-    return formatWhatsAppOrder(items, total);
-  }, [items, total]);
+    return formatWhatsAppOrder(items, total, config);
+  }, [items, total, config]);
+
+  if (config?.disabled) {
+    return {
+      items: [] as CartItem[],
+      isOpen: false,
+      setIsOpen: () => {},
+      addItem: () => {},
+      removeItem: () => {},
+      updateQuantity: () => {},
+      clearCart: () => {},
+      total: 0,
+      itemCount: 0,
+      getItemQuantity: () => 0,
+      getItemId: () => undefined as string | undefined,
+      generateWhatsAppMessage: () => "",
+    };
+  }
 
   return {
     items,

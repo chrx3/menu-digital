@@ -14,6 +14,10 @@ export interface PreciosSandwich {
 }
 
 export interface Producto {
+  /** DB id, present when loaded from Supabase (used by the editor to save). */
+  id?: string;
+  /** DB slug, present when loaded from Supabase. */
+  slug?: string;
   nombre: string;
   ingredientes?: string[];
   incluye?: string[];
@@ -22,17 +26,28 @@ export interface Producto {
   precio?: number;
   /** Ruta en public/, ej: /menu/papas_supremas/cheddar.webp */
   imagen?: string;
+  promociones?: Record<string, number>;
+  destacado?: boolean;
+  tieneEstilo?: boolean;
+  estiloNombre?: string;
+  estiloOpciones?: { label: string; value: string }[];
 }
 
 export interface Categoria {
+  /** Slug used across the public landing for navigation/anchors. */
   id: string;
+  /** DB id, present when loaded from Supabase (used by the editor to save). */
+  dbId?: string;
   titulo: string;
   descripcion: string;
-  /** Imagen de la sección en public/ */
   imagen?: string;
-  /** Imagen promocional opcional (ej. combos con papas) */
   imagenPromo?: string;
   items: Producto[];
+  opciones?: { label: string; value: string; orden: number }[];
+  tipoPrecio?: string;
+  opcionesNombre?: string;
+  etiquetaWhatsApp?: string;
+  destacado?: boolean;
 }
 
 export interface CartItem {
@@ -84,7 +99,11 @@ export function getPrecio(producto: Producto, variante: string): number {
   return 0;
 }
 
-export function getVariantes(producto: Producto, categoriaId?: string): PrecioVariante[] {
+export function getVariantes(
+  producto: Producto,
+  categoriaId?: string,
+  opciones?: { label: string; value: string; orden: number }[],
+): PrecioVariante[] {
   if (producto.precio !== undefined) {
     return [{ label: 'Precio', value: 'unico', precio: producto.precio }];
   }
@@ -94,19 +113,20 @@ export function getVariantes(producto: Producto, categoriaId?: string): PrecioVa
   const precios = producto.precios;
   const variantes: PrecioVariante[] = [];
 
-  const labels: Record<string, string> = {
-    chica: 'Chica',
-    grande: 'Grande',
-    familiar: 'Familiar',
-    pollo: 'Pollo',
-    lomito: 'Lomito',
-    churrasco: 'Churrasco',
-    mechada: 'Mechada',
-    vienesa_xl: 'Vienesa XL',
-    as_xl: 'As XL',
-    individual: 'Individual',
-    promo_2x: 'Promo 2x',
-  };
+  const labels: Record<string, string> = {};
+  if (opciones?.length) {
+    for (const opt of opciones) {
+      labels[opt.value] = opt.label;
+    }
+  } else {
+    const staticLabels: Record<string, string> = {
+      chica: 'Chica', grande: 'Grande', familiar: 'Familiar',
+      pollo: 'Pollo', lomito: 'Lomito', churrasco: 'Churrasco', mechada: 'Mechada',
+      vienesa_xl: 'Vienesa XL', as_xl: 'As XL',
+      individual: 'Individual', promo_2x: 'Promo 2x',
+    };
+    Object.assign(labels, staticLabels);
+  }
 
   if (categoriaId === 'sandwiches' && isPreciosSandwich(precios)) {
     const ordenCarne: (keyof PreciosSandwich)[] = [
@@ -140,6 +160,8 @@ export function getVariantes(producto: Producto, categoriaId?: string): PrecioVa
 }
 
 export function getPromo2x(producto: Producto, variante: string, categoriaId?: string): number | null {
+  const configuredPromo = producto.promociones?.[variante];
+  if (configuredPromo != null) return configuredPromo;
   if (!producto.precios || categoriaId !== 'sandwiches') return null;
 
   if (!isPreciosSandwich(producto.precios)) return null;

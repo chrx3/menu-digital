@@ -28,13 +28,15 @@ interface FloatingFood {
   rotate: number;
 }
 
-const ICONS: FoodIcon[] = [
-  HotdogIcon,
-  FriesIcon,
-  BurgerIcon,
-  DrumstickIcon,
-  PopcornBagIcon,
-];
+const ICON_MAP: Record<string, FoodIcon> = {
+  hotdog: HotdogIcon,
+  fries: FriesIcon,
+  burger: BurgerIcon,
+  drumstick: DrumstickIcon,
+  popcorn: PopcornBagIcon,
+};
+
+const ALL_ICON_NAMES = Object.keys(ICON_MAP);
 
 const COLORS = [
   "text-naranja-intenso",
@@ -44,24 +46,49 @@ const COLORS = [
   "text-naranja-claro",
 ] as const;
 
-/** Mezcla fija de íconos — 0 hotdog, 1 papas, 2 burger, 3 drumstick, 4 popcorn */
-const ICON_MIX = [
-  2, 3, 0, 4, 1, 3, 4, 2, 0, 1, 3, 4, 0, 2, 3, 1, 4, 0, 3, 2, 1, 4, 3, 0,
-  2, 4, 1, 3, 0, 2, 4, 1, 3, 0, 2, 4, 1, 3, 0, 2, 4, 1, 3, 0, 2, 4,
-] as const;
+/** Deterministic permute seeded by index */
+function seededShuffle(arr: number[], seed: number): number[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = (((seed * (i + 1) * 31) % (i + 1)) + (i + 1)) % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
 
-/** Colores mezclados independientes del ícono */
-const COLOR_MIX = [
-  2, 0, 4, 1, 3, 2, 0, 4, 3, 1, 0, 2, 4, 3, 1, 0, 2, 4, 1, 3, 0, 4, 2, 3,
-  1, 4, 0, 2, 3, 1, 4, 0, 2, 3, 1, 4, 0, 2, 3, 1, 4, 0, 2, 3, 1, 4,
-] as const;
+function generateIconMix(activeIcons: string[], count: number): number[] {
+  if (activeIcons.length === 0) return [];
+  const indices = activeIcons
+    .map((name) => ALL_ICON_NAMES.indexOf(name))
+    .filter((i) => i >= 0);
+  const mix: number[] = [];
+  for (let i = 0; i < count; i++) {
+    mix.push(indices[i % indices.length]);
+  }
+  return seededShuffle(mix, 42);
+}
+
+function generateColorMix(count: number): number[] {
+  const base = [
+    2, 0, 4, 1, 3, 2, 0, 4, 3, 1, 0, 2, 4, 3, 1, 0, 2, 4, 1, 3, 0, 4, 2, 3, 1,
+    4, 0, 2, 3, 1, 4, 0, 2, 3, 1, 4, 0, 2, 3, 1, 4, 0, 2, 3, 1, 4,
+  ];
+  const mix: number[] = [];
+  for (let i = 0; i < count; i++) {
+    mix.push(base[i % base.length] % COLORS.length);
+  }
+  return mix;
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
 /** Grilla irregular + jitter para repartir iconos por toda la pantalla */
-function generateSpreadPositions(count: number, mobile: boolean): { top: number; left: number }[] {
+function generateSpreadPositions(
+  count: number,
+  mobile: boolean,
+): { top: number; left: number }[] {
   const cols = mobile ? 5 : 8;
   const rows = Math.ceil(count / cols);
   const positions: { top: number; left: number }[] = [];
@@ -87,21 +114,36 @@ function generateSpreadPositions(count: number, mobile: boolean): { top: number;
   return positions;
 }
 
-function buildParticles(mobile: boolean): FloatingFood[] {
-  const count = mobile ? 22 : 42;
+function buildParticles(
+  mobile: boolean,
+  activeIcons: string[],
+  desktopCount = 42,
+  mobileCount = 22,
+): FloatingFood[] {
+  const count = mobile ? mobileCount : desktopCount;
+  const iconMix = generateIconMix(activeIcons, count);
+  const colorMix = generateColorMix(count);
   const positions = generateSpreadPositions(count, mobile);
+
+  const icons =
+    activeIcons.length > 0
+      ? activeIcons.map((name) => ICON_MAP[name]).filter(Boolean)
+      : ALL_ICON_NAMES.map((name) => ICON_MAP[name]);
+
+  if (icons.length === 0) return [];
+  if (iconMix.length === 0) return [];
 
   return positions.map((pos, index) => {
     const layer = index % 3;
     const isSharp = layer === 0;
-    const iconIndex = ICON_MIX[index % ICON_MIX.length] % ICONS.length;
+    const iconIndex = iconMix[index % iconMix.length] % icons.length;
 
     return {
       id: `food-${index}`,
-      Icon: ICONS[iconIndex],
+      Icon: icons[iconIndex],
       top: `${pos.top}%`,
       left: `${pos.left}%`,
-      color: COLORS[COLOR_MIX[index % COLOR_MIX.length] % COLORS.length],
+      color: COLORS[colorMix[index] % COLORS.length],
       opacity: isSharp ? 0.38 + (index % 3) * 0.06 : 0.28 + (index % 4) * 0.05,
       blur: isSharp ? 0 : layer === 1 ? 0.5 : 1,
       size: mobile
@@ -172,7 +214,20 @@ function FloatingFoodIcon({
   );
 }
 
-export default function ParticleBackground() {
+export default function ParticleBackground({
+  desktopCount = 42,
+  mobileCount = 22,
+  disabled = false,
+  icons = ALL_ICON_NAMES,
+  /** Use absolute instead of fixed positioning (for editor previews) */
+  fixed = true,
+}: {
+  desktopCount?: number;
+  mobileCount?: number;
+  disabled?: boolean;
+  icons?: string[];
+  fixed?: boolean;
+}) {
   const reducedMotion = useReducedMotion();
   const [mobile, setMobile] = useState(false);
 
@@ -184,11 +239,16 @@ export default function ParticleBackground() {
     return () => media.removeEventListener("change", update);
   }, []);
 
-  const particles = useMemo(() => buildParticles(mobile), [mobile]);
+  const activeIcons = icons.length > 0 ? icons : ALL_ICON_NAMES;
+
+  const particles = useMemo(
+    () => buildParticles(mobile, activeIcons, desktopCount, mobileCount),
+    [mobile, activeIcons, desktopCount, mobileCount],
+  );
 
   return (
     <div
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+      className={`${fixed ? "fixed" : "absolute"} inset-0 pointer-events-none z-0 overflow-hidden`}
       aria-hidden="true"
     >
       <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-naranja-mc/25 blur-[100px]" />
@@ -200,7 +260,7 @@ export default function ParticleBackground() {
         <FloatingFoodIcon
           key={particle.id}
           particle={particle}
-          reducedMotion={reducedMotion ?? false}
+          reducedMotion={disabled || reducedMotion || false}
         />
       ))}
     </div>

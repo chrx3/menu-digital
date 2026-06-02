@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# opencode config (contains access tokens)
+opencode.json
+opencode.jsonc
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -39,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local Supabase CLI state
+/supabase/.temp/

@@ -7,22 +7,24 @@ interface CategoryTabsProps {
   categorias: Categoria[];
   activeCategory: string;
   onCategoryChange: (id: string) => void;
+  viewingLabel: string;
 }
 
 export default function CategoryTabs({
   categorias,
   activeCategory,
   onCategoryChange,
+  viewingLabel,
 }: CategoryTabsProps) {
   return (
     <div
-      className="sticky top-[72px] sm:top-[80px] z-40 -mx-4 sm:mx-0 mb-6 border-b border-naranja-mc/20 bg-crema/95 py-3 px-4 shadow-md shadow-marron-oscuro/8 backdrop-blur-md sm:rounded-2xl sm:border sm:border-marron-oscuro/10"
+      className="landing-category-top sticky z-40 -mx-4 mb-6 border-b border-naranja-mc/20 bg-crema/95 px-4 py-3 shadow-md shadow-marron-oscuro/8 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:border sm:border-marron-oscuro/10"
       role="navigation"
       aria-label="Categorías del menú"
     >
       <div className="max-w-7xl mx-auto">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-marron-oscuro/60 mb-2 sm:hidden">
-          Estás viendo
+          {viewingLabel}
         </p>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
           {categorias.map((categoria) => (

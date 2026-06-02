@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, ShoppingCart, Tag, Check } from "lucide-react";
 import {
@@ -10,6 +10,8 @@ import {
   getPrecio,
   getPromo2x,
 } from "../types";
+// asset-map is only used as a local fallback during development;
+// in production, images come from Supabase (producto.imagen field).
 import { getSlideSrcForProduct } from "../data/asset-map";
 import CardFloatingImage from "./CardFloatingImage";
 import {
@@ -43,6 +45,10 @@ interface ProductCardProps {
   ) => number;
   flyToCart: (payload: { fromRect: DOMRect }) => void;
   index: number;
+  translations: Record<string, string>;
+  /** Editor mode — called when product card is clicked */
+  onSelectProduct?: (productSlug: string) => void;
+  selected?: boolean;
 }
 
 export default function ProductCard({
@@ -54,10 +60,17 @@ export default function ProductCard({
   getItemQuantity,
   flyToCart,
   index,
+  translations,
+  onSelectProduct,
+  selected,
 }: ProductCardProps) {
+  const t = (key: string, fallback: string) => translations[key] || fallback;
   const isSandwich = categoria.id === "sandwiches";
   const isEstiloCombo = isSandwichEstiloCombo(producto, categoria.id);
-  const variantes = getVariantes(producto, categoria.id);
+  const estiloOpciones = producto.estiloOpciones?.length
+    ? producto.estiloOpciones
+    : SANDWICH_ESTILO_OPTIONS;
+  const variantes = getVariantes(producto, categoria.id, categoria.opciones);
   const carneOpciones = isSandwich ? variantes : [];
 
   const [selectedVariante, setSelectedVariante] = useState(
@@ -91,7 +104,7 @@ export default function ProductCard({
   );
   const isInCart = quantity > 0;
 
-  const handleAddToCart = useCallback(() => {
+  const handleAddToCart = () => {
     if (!selectedVariante) return;
 
     // Trigger fly animation from button to cart
@@ -113,33 +126,19 @@ export default function ProductCard({
     // Show success state briefly
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 1200);
-  }, [
-    carneValue,
-    selectedVariante,
-    isSandwich,
-    categoria,
-    producto,
-    varianteLabel,
-    precioActual,
-    promo2x,
-    onAddToCart,
-    flyToCart,
-  ]);
+  };
 
-  const handleQuantityChange = useCallback(
-    (delta: number) => {
-      if (!itemId) return;
-      const newQuantity = quantity + delta;
-      onUpdateQuantity(itemId, newQuantity);
-    },
-    [itemId, quantity, onUpdateQuantity],
-  );
+  const handleQuantityChange = (delta: number) => {
+    if (!itemId) return;
+    onUpdateQuantity(itemId, quantity + delta);
+  };
 
   const formatPrice = (price: number) => {
     return `$${price.toLocaleString("es-CL")}`;
   };
 
-  const imageSrc = getSlideSrcForProduct(categoria.id, producto.nombre);
+  const imageSrc =
+    producto.imagen || getSlideSrcForProduct(categoria.id, producto.nombre);
 
   return (
     <motion.div
@@ -152,7 +151,15 @@ export default function ProductCard({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative h-full"
+      onClick={
+        onSelectProduct
+          ? (e: React.MouseEvent) => {
+              e.stopPropagation();
+              onSelectProduct(producto.nombre);
+            }
+          : undefined
+      }
+      className={`group relative h-full ${onSelectProduct ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-primary bg-primary/5 rounded-lg" : ""}`}
     >
       <motion.div
         className="relative flex h-full min-h-[17.5rem] flex-col bg-crema/95 backdrop-blur-sm rounded-2xl overflow-hidden border border-marron-oscuro/10 hover:border-naranja-mc/40 transition-[box-shadow,border-color,transform] duration-300"
@@ -164,9 +171,7 @@ export default function ProductCard({
         }}
         transition={{ duration: 0.3 }}
       >
-        {imageSrc && (
-          <CardFloatingImage src={imageSrc} alt={producto.nombre} />
-        )}
+        {imageSrc && <CardFloatingImage src={imageSrc} alt={producto.nombre} />}
 
         <div className="relative z-10 flex flex-1 flex-col p-5">
           {/* Título + ingredientes en columna */}
@@ -196,45 +201,52 @@ export default function ProductCard({
           </div>
 
           <div className="flex flex-1 flex-col">
-          {/* Incluye tags */}
-          {producto.incluye && producto.incluye.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs text-naranja-texto/90 font-medium mb-1.5">
-                Incluye:
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {producto.incluye.map((item) => (
-                  <span
-                    key={item}
-                    className="px-2 py-0.5 bg-[#F5821F]/10 text-naranja-texto text-xs rounded-full"
-                  >
-                    {item}
-                  </span>
-                ))}
+            {/* Incluye tags */}
+            {producto.incluye && producto.incluye.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-naranja-texto/90 font-medium mb-1.5">
+                  {t("product.includes", "Incluye:")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {producto.incluye.map((item) => (
+                    <span
+                      key={item}
+                      className="px-2 py-0.5 bg-[#F5821F]/10 text-naranja-texto text-xs rounded-full"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Detalle */}
-          {producto.detalle && (
-            <p className="text-sm text-[#3D1F00]/50 mb-4">{producto.detalle}</p>
-          )}
-
-          {/* Sándwich: estilo Completo o Italiano (solo ítem combinado) */}
-          {isEstiloCombo && (
-            <div className="mb-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
-                Estilo del sándwich
+            {/* Detalle */}
+            {producto.detalle && (
+              <p className="text-sm text-[#3D1F00]/50 mb-4">
+                {producto.detalle}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {SANDWICH_ESTILO_OPTIONS.map((opcion) => (
-                  <motion.button
-                    key={opcion.value}
-                    type="button"
-                    onClick={() => setSelectedEstilo(opcion.value)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`
+            )}
+
+            {/* Sándwich: estilo Completo o Italiano (solo ítem combinado) */}
+            {isEstiloCombo && (
+              <div className="mb-4">
+                <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
+                  {t(
+                    "product.sandwichStyle",
+                    producto.estiloNombre || "Estilo del sándwich",
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {estiloOpciones.map((opcion) => (
+                    <motion.button
+                      key={opcion.value}
+                      type="button"
+                      onClick={() =>
+                        setSelectedEstilo(opcion.value as SandwichEstilo)
+                      }
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`
                       px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
                       ${
                         selectedEstilo === opcion.value
@@ -242,29 +254,32 @@ export default function ProductCard({
                           : "bg-[#3D1F00]/5 text-[#3D1F00]/60 hover:text-[#3D1F00] hover:bg-[#3D1F00]/10 border border-[#3D1F00]/10"
                       }
                     `}
-                  >
-                    {opcion.label}
-                  </motion.button>
-                ))}
+                    >
+                      {opcion.label}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Sándwiches: tipo de carne */}
-          {isSandwich && carneOpciones.length > 0 && (
-            <div className="mb-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
-                Tipo de carne
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {carneOpciones.map((variante) => (
-                  <motion.button
-                    key={variante.value}
-                    type="button"
-                    onClick={() => setSelectedVariante(variante.value)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`
+            {/* Sándwiches: tipo de carne */}
+            {isSandwich && carneOpciones.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
+                  {t(
+                    "product.meatType",
+                    categoria.opcionesNombre || "Tipo de carne",
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {carneOpciones.map((variante) => (
+                    <motion.button
+                      key={variante.value}
+                      type="button"
+                      onClick={() => setSelectedVariante(variante.value)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`
                       px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
                       ${
                         selectedVariante === variante.value
@@ -272,29 +287,32 @@ export default function ProductCard({
                           : "bg-[#3D1F00]/5 text-[#3D1F00]/60 hover:text-[#3D1F00] hover:bg-[#3D1F00]/10 border border-[#3D1F00]/10"
                       }
                     `}
-                  >
-                    {variante.label}
-                  </motion.button>
-                ))}
+                    >
+                      {variante.label}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Otras categorías: tamaño, proteína, etc. */}
-          {!isSandwich && variantes.length > 1 && (
-            <div className="mb-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
-                Elige tu opción
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {variantes.map((variante) => (
-                  <motion.button
-                    key={variante.value}
-                    type="button"
-                    onClick={() => setSelectedVariante(variante.value)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`
+            {/* Otras categorías: tamaño, proteína, etc. */}
+            {!isSandwich && variantes.length > 1 && (
+              <div className="mb-4">
+                <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
+                  {t(
+                    "product.chooseOption",
+                    categoria.opcionesNombre || "Elige tu opción",
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {variantes.map((variante) => (
+                    <motion.button
+                      key={variante.value}
+                      type="button"
+                      onClick={() => setSelectedVariante(variante.value)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`
                       px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
                       ${
                         selectedVariante === variante.value
@@ -302,29 +320,29 @@ export default function ProductCard({
                           : "bg-[#3D1F00]/5 text-[#3D1F00]/60 hover:text-[#3D1F00] hover:bg-[#3D1F00]/10 border border-[#3D1F00]/10"
                       }
                     `}
-                  >
-                    {variante.label}
-                  </motion.button>
-                ))}
+                    >
+                      {variante.label}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Promo 2x */}
-          {promo2x && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-2 bg-[#F5821F]/8 rounded-lg border border-[#F5821F]/20"
-            >
-              <div className="flex items-center gap-2">
-                <Tag className="w-3.5 h-3.5 text-naranja-texto" />
-                <span className="text-naranja-texto text-xs font-bold">
-                  Promo 2x: {formatPrice(promo2x)}
-                </span>
-              </div>
-            </motion.div>
-          )}
+            {/* Promo 2x */}
+            {promo2x && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-2 bg-[#F5821F]/8 rounded-lg border border-[#F5821F]/20"
+              >
+                <div className="flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-naranja-texto" />
+                  <span className="text-naranja-texto text-xs font-bold">
+                    {t("product.promo2x", "Promo 2x:")} {formatPrice(promo2x)}
+                  </span>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Price and Action */}
@@ -355,6 +373,7 @@ export default function ProductCard({
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       className="p-2.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                      aria-label={`Quitar una unidad de ${producto.nombre}`}
                     >
                       <Minus className="w-4 h-4" />
                     </motion.button>
@@ -371,6 +390,7 @@ export default function ProductCard({
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       className="p-2.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                      aria-label={`Agregar una unidad de ${producto.nombre}`}
                     >
                       <Plus className="w-4 h-4" />
                     </motion.button>
@@ -386,6 +406,7 @@ export default function ProductCard({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     className="relative w-11 h-11 flex items-center justify-center bg-[#F5821F] text-white rounded-full shadow-lg shadow-[#F5821F]/30 disabled:opacity-70"
+                    aria-label={`Agregar ${producto.nombre} al carrito`}
                   >
                     <AnimatePresence mode="wait">
                       {showSuccess ? (

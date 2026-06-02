@@ -24,6 +24,9 @@ interface CartProps {
   onClearCart: () => void;
   generateWhatsAppMessage: () => string;
   cartPulse?: boolean;
+  whatsappNumber?: string;
+  whatsappEnabled?: boolean;
+  translations: Record<string, string>;
 }
 
 export default function Cart({
@@ -37,13 +40,18 @@ export default function Cart({
   onClearCart,
   generateWhatsAppMessage,
   cartPulse = false,
+  whatsappNumber,
+  whatsappEnabled = true,
+  translations,
 }: CartProps) {
+  const t = (key: string, fallback: string) => translations[key] || fallback;
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleWhatsAppSend = () => {
     const message = generateWhatsAppMessage();
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/56963725018?text=${encodedMessage}`, "_blank");
+    const number = whatsappNumber || "56963725018";
+    window.open(`https://wa.me/${number}?text=${encodedMessage}`, "_blank");
   };
 
   const formatPrice = (price: number) => {
@@ -95,6 +103,7 @@ export default function Cart({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           data-cart-fly-target
+          aria-label={`Abrir carrito con ${itemCount} productos`}
         >
           <ShoppingCart className="w-6 h-6 text-white" />
           <AnimatePresence>
@@ -125,6 +134,7 @@ export default function Cart({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         data-cart-fly-target
+        aria-label={`Abrir carrito con ${itemCount} productos`}
       >
         <div className="relative">
           <ShoppingCart className="w-5 h-5" />
@@ -182,7 +192,7 @@ export default function Cart({
                       fontFamily: "var(--font-fredoka), system-ui, sans-serif",
                     }}
                   >
-                    Tu Pedido
+                    {t("cart.title", "Tu Pedido")}
                   </h2>
                 </div>
                 <motion.button
@@ -190,6 +200,7 @@ export default function Cart({
                   className="p-2 text-white/60 hover:text-white transition-colors"
                   whileHover={{ rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label="Cerrar carrito"
                 >
                   <X className="w-5 h-5" />
                 </motion.button>
@@ -204,10 +215,10 @@ export default function Cart({
                   >
                     <ShoppingCart className="w-16 h-16 text-white/20 mx-auto mb-4" />
                     <p className="text-white/60 text-lg">
-                      Tu carrito está vacío
+                      {t("cart.empty", "Tu carrito está vacío")}
                     </p>
                     <p className="text-white/40 text-sm mt-1">
-                      Agrega productos para comenzar tu pedido
+                      {t("cart.emptyHint", "Agrega productos para comenzar tu pedido")}
                     </p>
                   </motion.div>
                 ) : (
@@ -247,6 +258,7 @@ export default function Cart({
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               className="p-1 text-[#3D1F00]/40 hover:text-red-500 transition-colors"
+                              aria-label={`Eliminar ${item.productoNombre}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </motion.button>
@@ -261,6 +273,7 @@ export default function Cart({
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 className="p-1.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                                aria-label={`Quitar una unidad de ${item.productoNombre}`}
                               >
                                 <Minus className="w-3 h-3" />
                               </motion.button>
@@ -279,6 +292,7 @@ export default function Cart({
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 className="p-1.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                                aria-label={`Agregar una unidad de ${item.productoNombre}`}
                               >
                                 <Plus className="w-3 h-3" />
                               </motion.button>
@@ -302,7 +316,7 @@ export default function Cart({
                   className="p-4 border-t border-white/10 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-white/80">Total</span>
+                    <span className="text-white/80">{t("cart.total", "Total")}</span>
                     <motion.span
                       key={total}
                       initial={{ scale: 1.1 }}
@@ -317,21 +331,21 @@ export default function Cart({
                     </motion.span>
                   </div>
 
-                  <motion.button
+                  {whatsappEnabled && <motion.button
                     onClick={handleWhatsAppSend}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-green-500/30"
                   >
                     <MessageCircle className="w-5 h-5" />
-                    Enviar Pedido por WhatsApp
-                  </motion.button>
+                    {t("cart.sendWhatsApp", "Enviar Pedido por WhatsApp")}
+                  </motion.button>}
 
                   <button
                     onClick={() => setShowConfirm(true)}
                     className="w-full text-white/50 text-sm hover:text-white/70 transition-colors py-1"
                   >
-                    Vaciar carrito
+                    {t("cart.clearCart", "Vaciar carrito")}
                   </button>
                 </motion.div>
               )}
@@ -364,11 +378,10 @@ export default function Cart({
                     fontFamily: "var(--font-fredoka), system-ui, sans-serif",
                   }}
                 >
-                  ¿Vaciar carrito?
+                  {t("cart.confirmClear", "¿Vaciar carrito?")}
                 </h3>
                 <p className="text-white/80 mb-6">
-                  ¿Estás seguro de que quieres eliminar todos los productos de
-                  tu carrito?
+                  {t("cart.confirmClearText", "¿Estás seguro de que quieres eliminar todos los productos de tu carrito?")}
                 </p>
                 <div className="flex gap-3">
                   <motion.button
@@ -377,7 +390,7 @@ export default function Cart({
                     whileTap={{ scale: 0.98 }}
                     className="flex-1 py-2.5 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/15 transition-colors"
                   >
-                    Cancelar
+                    {t("cart.cancel", "Cancelar")}
                   </motion.button>
                   <motion.button
                     onClick={() => {
@@ -388,7 +401,7 @@ export default function Cart({
                     whileTap={{ scale: 0.98 }}
                     className="flex-1 py-2.5 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors"
                   >
-                    Vaciar
+                    {t("cart.confirm", "Vaciar")}
                   </motion.button>
                 </div>
               </div>

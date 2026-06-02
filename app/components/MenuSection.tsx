@@ -7,7 +7,9 @@ import type { Categoria } from "../types";
 
 type CartHandlers = {
   onAddToCart: React.ComponentProps<typeof ProductCard>["onAddToCart"];
-  onUpdateQuantity: React.ComponentProps<typeof ProductCard>["onUpdateQuantity"];
+  onUpdateQuantity: React.ComponentProps<
+    typeof ProductCard
+  >["onUpdateQuantity"];
   getItemId: React.ComponentProps<typeof ProductCard>["getItemId"];
   getItemQuantity: React.ComponentProps<typeof ProductCard>["getItemQuantity"];
   flyToCart: React.ComponentProps<typeof ProductCard>["flyToCart"];
@@ -17,6 +19,10 @@ interface MenuSectionProps extends CartHandlers {
   categoria: Categoria;
   isSearching: boolean;
   menuRevealKey: number;
+  translations: Record<string, string>;
+  /** Editor mode — select product individually */
+  onSelectProduct?: (productSlug: string) => void;
+  selectedProductSlug?: string | null;
 }
 
 export default function MenuSection({
@@ -28,6 +34,9 @@ export default function MenuSection({
   getItemId,
   getItemQuantity,
   flyToCart,
+  translations,
+  onSelectProduct,
+  selectedProductSlug,
 }: MenuSectionProps) {
   return (
     <section
@@ -91,6 +100,11 @@ export default function MenuSection({
               getItemQuantity={getItemQuantity}
               flyToCart={flyToCart}
               index={index}
+              translations={translations}
+              onSelectProduct={onSelectProduct}
+              selected={Boolean(
+                onSelectProduct && selectedProductSlug === producto.nombre,
+              )}
             />
           </motion.div>
         ))}

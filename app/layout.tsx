@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Poppins } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+import { loadBusinessConfig } from "@/app/config/loader";
 
 const fredoka = Fredoka({
   variable: "--font-fredoka",
@@ -14,16 +16,19 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "MC Tommy - Menú Digital | Comida Rápida Chilena",
-  description:
-    "Menú digital interactivo de MC Tommy. Las mejores papas supremas, fajitas, pollo asado, sándwiches y más.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await loadBusinessConfig().catch(() => null);
+  return {
+    title: config?.seoTitle || "Menu Landing | Menú Digital",
+    description: config?.seoDescription || "Menú digital interactivo.",
+    openGraph: config?.seoOgImage ? { images: [config.seoOgImage] } : undefined,
+  };
+}
 
-export const viewport: Viewport = {
-  themeColor: "#FFF8F0",
-  colorScheme: "light",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const config = await loadBusinessConfig().catch(() => null);
+  return { themeColor: config?.seoThemeColor || "#FFF8F0", colorScheme: "light" };
+}
 
 export default function RootLayout({
   children,
@@ -33,7 +38,8 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${fredoka.variable} ${poppins.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
+      className={cn("h-full", "antialiased", fredoka.variable, poppins.variable)}
     >
       <body className="min-h-full bg-crema text-marron-oscuro">{children}</body>
     </html>

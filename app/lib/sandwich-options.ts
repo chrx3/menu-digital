@@ -17,7 +17,7 @@ export function isSandwichEstiloCombo(
   categoriaId: string,
 ): boolean {
   return (
-    categoriaId === "sandwiches" && producto.nombre === SANDWICH_COMPLETO_O_ITALIANO
+    categoriaId === "sandwiches" && (producto.tieneEstilo || producto.nombre === SANDWICH_COMPLETO_O_ITALIANO)
   );
 }
 
