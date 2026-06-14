@@ -6,7 +6,7 @@ import { isSuperAdmin } from "@/app/lib/super-admin";
 import { getBusinessSlug } from "@/app/lib/business-context";
 import { createServiceClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { ImportMenuForm } from "@/components/admin/ImportMenuForm";
+import { ImportMenuClient } from "@/components/admin/ImportMenuClient";
 import { ADMIN_PATH } from "@/app/lib/admin-path";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,6 @@ export default async function ImportMenuPage() {
     .eq("slug", slug)
     .maybeSingle();
 
-  // ponytail: super_admin without a valid slug gets a hint.
   const superAdmin = await isSuperAdmin(user.email);
   if (!business && !superAdmin) {
     redirect(ADMIN_PATH);
@@ -51,8 +50,7 @@ export default async function ImportMenuPage() {
           <strong>{business?.name ?? "(sin nombre)"}</strong> y la IA lo convierte en categorías y productos listos para revisar.
         </p>
       </div>
-
-      <ImportMenuForm businessName={business?.name ?? "este negocio"} />
+      <ImportMenuClient />
     </div>
   );
 }

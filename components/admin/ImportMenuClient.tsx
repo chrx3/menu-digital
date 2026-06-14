@@ -8,11 +8,7 @@ import { toast } from "sonner";
 import { applyImportedMenu } from "@/app/actions/import-menu";
 import type { ImportMenu } from "@/app/lib/import-menu-schema";
 
-interface Props {
-  businessName: string;
-}
-
-export function ImportMenuForm({ businessName }: Props) {
+export function ImportMenuClient() {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportMenu | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +130,7 @@ export function ImportMenuForm({ businessName }: Props) {
               <strong>
                 {result.categories.reduce((acc, c) => acc + c.productos.length, 0)}
               </strong>{" "}
-              productos para {businessName}.
+              productos para este negocio.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -177,7 +173,7 @@ export function ImportMenuForm({ businessName }: Props) {
                 ) : (
                   <>
                     <CheckCircle2 className="mr-1.5 size-4" aria-hidden="true" />
-                    Aplicar a {businessName}
+                    Aplicar al menú
                   </>
                 )}
               </Button>
