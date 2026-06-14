@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { setActiveBusinessSlug } from "@/app/actions/active-business";
+import { toast } from "sonner";
+import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -74,8 +78,10 @@ const PLATFORM_NAV: NavItem[] = [
 
 interface AdminSidebarProps {
   businessName: string;
+  businessSlug: string;
   userEmail: string | null;
   isSuperAdmin?: boolean;
+  businesses: { slug: string; name: string }[];
 }
 
 function getInitials(name: string) {
@@ -88,8 +94,27 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export function AdminSidebar({ businessName, userEmail, isSuperAdmin = false }: AdminSidebarProps) {
+export function AdminSidebar({ businessName, businessSlug, userEmail, isSuperAdmin = false, businesses }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [activeSlug, setActiveSlug] = useState(businessSlug);
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    setActiveSlug(businessSlug);
+  }, [businessSlug]);
+
+  function switchBusiness(slug: string) {
+    if (slug === activeSlug) return;
+    start(async () => {
+      const r = await setActiveBusinessSlug(slug);
+      if (r.error) {
+        toast.error(r.error);
+        return;
+      }
+      toast.success("Negocio cambiado");
+      window.location.reload();
+    });
+  }
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -103,22 +128,63 @@ export function AdminSidebar({ businessName, userEmail, isSuperAdmin = false }: 
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              isActive={isDashboardActive}
-              tooltip={businessName}
-              render={<Link href="/admin" />}
-            >
-              <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <LayoutDashboard aria-hidden="true" />
-              </div>
-              <div className="flex min-w-0 flex-col gap-0.5 leading-none">
-                <span className="truncate font-semibold">{businessName}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  Panel de administración
-                </span>
-              </div>
-            </SidebarMenuButton>
+            {isSuperAdmin && businesses.length > 1 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <SidebarMenuButton
+                      size="lg"
+                      isActive={isDashboardActive}
+                      tooltip={businessName}
+                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    >
+                      <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                        <LayoutDashboard aria-hidden="true" />
+                      </div>
+                      <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                        <span className="truncate font-semibold">{businessName}</span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          Cambiar negocio
+                        </span>
+                      </div>
+                      <ChevronsUpDown className="ml-auto size-4 shrink-0" aria-hidden="true" />
+                    </SidebarMenuButton>
+                  }
+                />
+                <DropdownMenuContent
+                  align="start"
+                  className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+                >
+                  {businesses.map((b) => (
+                    <DropdownMenuItem
+                      key={b.slug}
+                      onClick={() => switchBusiness(b.slug)}
+                      disabled={pending}
+                    >
+                      <span className="flex-1">{b.name}</span>
+                      {b.slug === activeSlug && <Check className="size-4" aria-hidden="true" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <SidebarMenuButton
+                size="lg"
+                isActive={isDashboardActive}
+                tooltip={businessName}
+                render={<Link href="/admin" />}
+              >
+                <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <LayoutDashboard aria-hidden="true" />
+                </div>
+                <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                  <span className="truncate font-semibold">{businessName}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    Panel de administración
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

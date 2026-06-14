@@ -18,21 +18,25 @@ import { cn } from "@/lib/utils";
 interface AdminShellProps {
   children: React.ReactNode;
   businessName: string;
+  businessSlug: string;
   isActive: boolean;
   userEmail: string | null;
   primaryColor: string | null;
   primaryTextColor: string | null;
   isSuperAdmin?: boolean;
+  businesses: { slug: string; name: string }[];
 }
 
 export function AdminShell({
   children,
   businessName,
+  businessSlug,
   isActive,
   userEmail,
   primaryColor,
   primaryTextColor,
   isSuperAdmin = false,
+  businesses,
 }: AdminShellProps) {
   const pathname = usePathname();
   const isEditorRoute = pathname.startsWith("/admin/editor");
@@ -57,8 +61,10 @@ export function AdminShell({
       >
         <AdminSidebar
           businessName={businessName}
+          businessSlug={businessSlug}
           userEmail={userEmail}
           isSuperAdmin={isSuperAdmin}
+          businesses={businesses}
         />
         <SidebarInset className="min-w-0 h-full overflow-hidden">
           <div className="flex h-full flex-col">
