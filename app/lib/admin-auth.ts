@@ -2,7 +2,10 @@ import "server-only";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getBusinessSlug } from "@/app/lib/business-context";
+import { isSuperAdmin } from "@/app/lib/super-admin";
 
+// ponytail: super_admin bypasses business membership check. Useful for
+// app.chrsx3.com where there's no business context.
 export async function requireAdmin() {
   const supabase = await createClient();
   const {
@@ -15,29 +18,53 @@ export async function requireAdmin() {
   }
 
   const service = await createServiceClient();
+  const slug = await getBusinessSlug();
   const { data: business, error: businessError } = await service
     .from("businesses")
     .select("id")
-    .eq("slug", await getBusinessSlug())
-    .single();
+    .eq("slug", slug)
+    .maybeSingle();
 
-  if (businessError || !business) {
+  if (businessError) {
     throw new Error("No se encontró el negocio configurado.");
   }
 
-  const { data: membership, error: membershipError } = await service
-    .from("business_users")
-    .select("role")
-    .eq("business_id", business.id)
-    .eq("user_id", user.id)
-    .eq("role", "admin")
-    .maybeSingle();
+  if (business) {
+    const { data: membership, error: membershipError } = await service
+      .from("business_users")
+      .select("role")
+      .eq("business_id", business.id)
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
 
-  if (membershipError || !membership) {
-    throw new Error("No tienes permisos de administrador para este negocio.");
+    if (membershipError) {
+      throw new Error("Error al verificar permisos.");
+    }
+
+    if (membership) {
+      return { businessId: business.id as string, service, supabase, user };
+    }
   }
 
-  return { businessId: business.id as string, service, supabase, user };
+  // No business context or no membership. Super-admin fallback.
+  if (await isSuperAdmin(user.email)) {
+    const { data: anyBusiness } = await service
+      .from("businesses")
+      .select("id")
+      .eq("is_active", true)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    return {
+      businessId: anyBusiness?.id ?? "",
+      service,
+      supabase,
+      user,
+    };
+  }
+
+  throw new Error("No tienes permisos de administrador para este negocio.");
 }
 
 export function actionError(error: unknown) {
