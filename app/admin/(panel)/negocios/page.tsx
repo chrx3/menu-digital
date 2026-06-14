@@ -4,10 +4,17 @@ import { Plus, ExternalLink, Store } from "lucide-react";
 import { requireAdmin } from "@/app/lib/admin-auth";
 import { isSuperAdmin } from "@/app/lib/super-admin";
 import { listBusinesses } from "@/app/actions/businesses";
+import { checkBusinessesStatus } from "@/app/actions/subdomain-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleBusinessActiveButton } from "@/components/admin/ToggleBusinessActiveButton";
+import { SubdomainStatusBadge } from "@/components/admin/SubdomainStatusBadge";
+import { SubdomainPoller } from "@/components/admin/SubdomainPoller";
 import { ROOT_DOMAIN } from "@/app/lib/domains";
+
+// ponytail: status fetched in parallel; failures don't block render.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function NegociosListPage() {
   let ctx: Awaited<ReturnType<typeof requireAdmin>>;
@@ -28,9 +35,13 @@ export default async function NegociosListPage() {
     );
   }
   const businesses = data ?? [];
+  const slugs = businesses.map((b) => b.slug);
+  const status: Record<string, import("@/app/actions/subdomain-status").SubdomainStatus> =
+    await checkBusinessesStatus(slugs).catch(() => ({}));
 
   return (
     <div className="flex flex-col gap-6">
+      <SubdomainPoller />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Negocios</h1>
@@ -72,6 +83,10 @@ export default async function NegociosListPage() {
                       >
                         {b.is_active ? "Activo" : "Inactivo"}
                       </span>
+                      <SubdomainStatusBadge
+                        slug={b.slug}
+                        initial={status[b.slug]}
+                      />
                     </div>
                     <p className="font-mono text-xs text-muted-foreground">
                       https://{b.slug}.{ROOT_DOMAIN}
