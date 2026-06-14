@@ -69,38 +69,49 @@ export default async function proxy(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith("/admin/auth");
   const isPanelHost = slug === null && hostname === `${PANEL_SUBDOMAIN}.${ROOT_DOMAIN}`;
 
-  // ponytail: same-origin redirect helper. NextResponse.redirect requires
-  // absolute URLs and resolves them against the (rewritten) Host header,
-  // which gives us "https://localhost/...". Set the Location header
-  // manually with a relative path so the browser keeps the user's origin.
-  const relativeRedirect = (path: string, searchParams?: URLSearchParams) => {
-    const u = new URL(path, "http://_");
+  // ponytail: same-origin redirect. Coolify/Traefik rewrites the Host
+  // header to localhost, so building an absolute URL with the request
+  // context yields "https://localhost/...". Construct the Location URL
+  // using the protocol+hostname from forwarded headers, falling back to
+  // the request context only when those are missing.
+  const baseUrl = (() => {
+    const fwdHostH =
+      request.headers.get("x-forwarded-host") ??
+      request.headers.get("x-original-host") ??
+      request.headers.get("host");
+    const cleanHost = fwdHostH?.split(",")[0].trim().split(":")[0];
+    if (cleanHost && !cleanHost.startsWith("localhost")) {
+      return `${protocol}://${cleanHost}`;
+    }
+    return request.nextUrl.origin;
+  })();
+
+  const absoluteRedirect = (path: string, searchParams?: URLSearchParams) => {
+    const u = new URL(path, baseUrl);
     if (searchParams) {
       for (const [k, v] of searchParams) u.searchParams.set(k, v);
     }
-    const res = new NextResponse(null, { status: 307 });
-    res.headers.set("Location", `${u.pathname}${u.search}`);
-    return res;
+    return NextResponse.redirect(u, { status: 307 });
   };
 
   // ponytail: /admin is panel-only. On business subdomains, bounce to apex.
   if (isAdminRoute && slug !== null) {
-    return relativeRedirect("/");
+    return absoluteRedirect("/");
   }
 
   // ponytail: panel host landing -> /admin. Business hosts keep / as the menu.
   if (isPanelHost && request.nextUrl.pathname === "/") {
-    return relativeRedirect("/admin");
+    return absoluteRedirect("/admin");
   }
 
   if (isAdminRoute && !isAuthRoute && !user) {
     const sp = new URLSearchParams();
     sp.set("redirect", request.nextUrl.pathname);
-    return relativeRedirect("/admin/auth/login", sp);
+    return absoluteRedirect("/admin/auth/login", sp);
   }
 
   if (isAuthRoute && user && !request.nextUrl.searchParams.has("error")) {
-    return relativeRedirect("/admin");
+    return absoluteRedirect("/admin");
   }
 
   return supabaseResponse;
