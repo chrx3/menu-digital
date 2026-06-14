@@ -43,6 +43,6 @@
 - [x] Archivos legacy de McTommy (sin prefijo) siguen funcionando porque guardan URL completa en DB
 
 ## 8. Pendientes / bugs conocidos
-- [ ] **BUG ACTUAL**: redirect a `https://localhost/admin` cuando se navega a `app.chrsx3.com/`. Causa: Traefik no preserva el Host header original. **Fix en commit pendiente** (lee `x-forwarded-host`).
-- [ ] El cambio de negocio en el dropdown puede fallar por RLS si la action corre con anon en lugar de service role. **Ya fixed**.
-- [ ] `NEXT_PUBLIC_BUSINESS_SLUG` en Coolify sigue en `mc-tommy` (con guión). Actualizar a `mctommy` (sin guión) desde la UI.
+- [ ] **BUG CRÍTICO**: redirect a `https://localhost/admin` cuando se navega a `app.chrsx3.com/`. Causa raíz: **Traefik de Coolify en el VPS no preserva el Host header**. El proxy.ts de Next.js no puede construir URLs absolutas correctas porque el header `Host` que llega al contenedor es `localhost`. **Fix en VPS** (no en código): editar el docker-compose de Traefik y agregar `--entrypoints.http.forwardedHeaders.insecure=true` y lo mismo para `https`. Ver `COOLIFY_PROXY_FIX.md`.
+- [ ] El cambio de negocio en el dropdown puede fallar por RLS si la action corre con anon en lugar de service role. **Ya fixed** (commit `7a3f525`).
+- [ ] `NEXT_PUBLIC_BUSINESS_SLUG` en Coolify sigue en `mc-tommy` (con guión). Actualizar a `mctommy` (sin guión) desde la UI. Es solo fallback dev.
