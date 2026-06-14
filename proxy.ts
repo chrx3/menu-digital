@@ -78,15 +78,15 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ponytail: same-origin redirect. Coolify/Traefik rewrites the Host header
-  // to localhost, so building an absolute URL is unreliable. Use a relative
-  // path so the browser keeps the user's original origin.
+  // to localhost, so building an absolute URL with the original host is
+  // unreliable. Use a relative URL (path-only) so the browser keeps the
+  // user's original origin.
   const buildUrl = (path: string, searchParams?: URLSearchParams) => {
-    const u = new URL(path, request.nextUrl);
-    u.port = "";
+    const u = new URL(path, "http://_");
     if (searchParams) {
       for (const [k, v] of searchParams) u.searchParams.set(k, v);
     }
-    return u;
+    return `${u.pathname}${u.search}`;
   };
 
   // ponytail: /admin is panel-only. On business subdomains, bounce to apex.
