@@ -69,61 +69,38 @@ export default async function proxy(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith("/admin/auth");
   const isPanelHost = slug === null && hostname === `${PANEL_SUBDOMAIN}.${ROOT_DOMAIN}`;
 
-  // ponytail: panel host landing -> /admin. Business hosts keep / as the menu.
-  if (isPanelHost && request.nextUrl.pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin";
-    url.port = "";
-    return NextResponse.redirect(url);
-  }
-
-  // ponytail: same-origin redirect. Coolify/Traefik rewrites the Host header
-  // to localhost, so building an absolute URL with the original host is
-  // unreliable. Use a relative URL (path-only) so the browser keeps the
-  // user's original origin.
-  const buildUrl = (path: string, searchParams?: URLSearchParams) => {
+  // ponytail: same-origin redirect helper. NextResponse.redirect requires
+  // absolute URLs and resolves them against the (rewritten) Host header,
+  // which gives us "https://localhost/...". Set the Location header
+  // manually with a relative path so the browser keeps the user's origin.
+  const relativeRedirect = (path: string, searchParams?: URLSearchParams) => {
     const u = new URL(path, "http://_");
     if (searchParams) {
       for (const [k, v] of searchParams) u.searchParams.set(k, v);
     }
-    return `${u.pathname}${u.search}`;
+    const res = new NextResponse(null, { status: 307 });
+    res.headers.set("Location", `${u.pathname}${u.search}`);
+    return res;
   };
 
   // ponytail: /admin is panel-only. On business subdomains, bounce to apex.
   if (isAdminRoute && slug !== null) {
-    return NextResponse.redirect(buildUrl("/"));
+    return relativeRedirect("/");
   }
 
   // ponytail: panel host landing -> /admin. Business hosts keep / as the menu.
   if (isPanelHost && request.nextUrl.pathname === "/") {
-    return NextResponse.redirect(buildUrl("/admin"));
+    return relativeRedirect("/admin");
   }
 
   if (isAdminRoute && !isAuthRoute && !user) {
     const sp = new URLSearchParams();
     sp.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(buildUrl("/admin/auth/login", sp));
+    return relativeRedirect("/admin/auth/login", sp);
   }
 
   if (isAuthRoute && user && !request.nextUrl.searchParams.has("error")) {
-    return NextResponse.redirect(buildUrl("/admin"));
-  }
-
-  if (isAdminRoute && !isAuthRoute && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin/auth/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
-    url.port = "";
-    return NextResponse.redirect(url);
-  }
-
-  if (isAuthRoute && user && !request.nextUrl.searchParams.has("error")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin";
-    url.searchParams.delete("redirect");
-    url.searchParams.delete("error");
-    url.port = "";
-    return NextResponse.redirect(url);
+    return relativeRedirect("/admin");
   }
 
   return supabaseResponse;
