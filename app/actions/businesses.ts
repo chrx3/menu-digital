@@ -10,7 +10,7 @@ const slugSchema = z
   .trim()
   .min(2)
   .max(60)
-  .regex(/^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$/, "Slug inválido (a-z, 0-9, guiones).");
+  .regex(/^[a-z0-9]+$/, "Slug inválido (solo a-z y 0-9, sin guiones).");
 
 const createSchema = z.object({
   slug: slugSchema,

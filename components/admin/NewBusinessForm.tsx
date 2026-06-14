@@ -16,8 +16,7 @@ function slugify(s: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
+    .replace(/[^a-z0-9]+/g, "")
     .slice(0, 60);
 }
 
@@ -80,10 +79,10 @@ export function NewBusinessForm() {
               value={slug}
               onChange={(e) => {
                 setSlugTouched(true);
-                setSlug(e.target.value.toLowerCase());
+                setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""));
                 setDirty(true);
               }}
-              pattern="^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$"
+              pattern="^[a-z0-9]+$"
               minLength={2}
               maxLength={60}
               required
