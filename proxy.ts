@@ -62,6 +62,7 @@ export default async function proxy(request: NextRequest) {
   if (isPanelHost && request.nextUrl.pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/admin";
+    url.port = "";
     return NextResponse.redirect(url);
   }
 
@@ -69,6 +70,7 @@ export default async function proxy(request: NextRequest) {
   if (isAdminRoute && slug !== null) {
     const apex = new URL(request.url);
     apex.hostname = `${PANEL_SUBDOMAIN}.${ROOT_DOMAIN}`;
+    apex.port = "";
     return NextResponse.redirect(apex);
   }
 
@@ -76,6 +78,7 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/auth/login";
     url.searchParams.set("redirect", request.nextUrl.pathname);
+    url.port = "";
     return NextResponse.redirect(url);
   }
 
@@ -84,6 +87,7 @@ export default async function proxy(request: NextRequest) {
     url.pathname = "/admin";
     url.searchParams.delete("redirect");
     url.searchParams.delete("error");
+    url.port = "";
     return NextResponse.redirect(url);
   }
 
