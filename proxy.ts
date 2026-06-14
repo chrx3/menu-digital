@@ -22,8 +22,19 @@ function applySlugHeader(request: NextRequest, slug: string | null): Headers {
 }
 
 export default async function proxy(request: NextRequest) {
-  const host = request.headers.get("host") ?? "";
-  const hostname = host.split(":")[0];
+  // ponytail: prefer x-forwarded-host (set by Traefik) over Host header.
+  // Coolify routes via Traefik to localhost:3000, so the raw Host header is
+  // "localhost" and breaks Location URLs.
+  const fwdHost =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("x-original-host") ??
+    request.headers.get("host") ??
+    "";
+  const fwdProto =
+    request.headers.get("x-forwarded-proto") ??
+    (request.nextUrl.protocol.replace(":", ""));
+  const hostname = fwdHost.split(",")[0].trim().split(":")[0];
+  const protocol = fwdProto.split(",")[0].trim();
   const slug = resolveBusinessSlug(hostname);
   const requestHeaders = applySlugHeader(request, slug);
 
@@ -66,11 +77,11 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ponytail: build redirect URLs from the live host header. request.nextUrl
-  // can default to "localhost" in some envs, breaking the Location header.
+  // ponytail: build redirect URLs from forwarded host header.
   const buildUrl = (path: string, searchParams?: URLSearchParams) => {
     const u = new URL(request.url);
     u.hostname = hostname;
+    u.protocol = protocol.endsWith(":") ? protocol : `${protocol}:`;
     u.port = "";
     u.pathname = path;
     u.search = "";
