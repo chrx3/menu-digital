@@ -14,11 +14,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/admin/auth/login?error=unauthorized");
   }
 
-  const { businessId, service, user } = ctx;
+  const { service, user } = ctx;
   const slug = await getBusinessSlug();
 
-  // ponytail: validate the cookie-selected slug. If stale/invalid, clear it
-  // so getBusinessId() falls back to the first active business instead of throwing.
+  // ponytail: validate the cookie-selected slug. If stale/invalid, clear it.
   const c = await cookies();
   const cookieSlug = c.get(ACTIVE_BUSINESS_COOKIE)?.value;
   if (cookieSlug) {
@@ -33,18 +32,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
   }
 
-  const [{ data: business }, { data: theme }] = await Promise.all([
-    service
-      .from("businesses")
-      .select("name, is_active, slug")
-      .eq("id", businessId)
-      .maybeSingle(),
-    service
-      .from("business_themes")
-      .select("color_primary, color_primary_text")
-      .eq("business_id", businessId)
-      .maybeSingle(),
-  ]);
+  // ponytail: look up the business by the resolved slug (cookie > env > default),
+  // not by ctx.businessId (which falls back to the first active business).
+  const { data: business } = await service
+    .from("businesses")
+    .select("id, name, is_active, slug")
+    .eq("slug", slug)
+    .maybeSingle();
+  const businessId = business?.id ?? ctx.businessId;
+
+  const { data: theme } = await service
+    .from("business_themes")
+    .select("color_primary, color_primary_text")
+    .eq("business_id", businessId)
+    .maybeSingle();
 
   const superAdmin = await isSuperAdmin(user.email);
   const businesses = superAdmin ? (await listBusinesses()).data ?? [] : [];
