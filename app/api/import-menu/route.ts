@@ -132,7 +132,9 @@ export async function POST(req: Request) {
   if (!res.ok) {
     const errText = await res.text();
     return NextResponse.json(
-      { error: `IA error ${res.status}: ${errText.slice(0, 200)}` },
+      {
+        error: `IA error ${res.status}: ${errText.slice(0, 500)}`,
+      },
       { status: 502 },
     );
   }
@@ -142,6 +144,7 @@ export async function POST(req: Request) {
   };
   const text = completion.choices?.[0]?.message?.content;
   if (!text) {
+    console.error("IA empty response:", JSON.stringify(completion).slice(0, 500));
     return NextResponse.json({ error: "IA no devolvió contenido." }, { status: 502 });
   }
 
