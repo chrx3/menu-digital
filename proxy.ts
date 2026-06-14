@@ -66,12 +66,38 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // ponytail: build redirect URLs from the live host header. request.nextUrl
+  // can default to "localhost" in some envs, breaking the Location header.
+  const buildUrl = (path: string, searchParams?: URLSearchParams) => {
+    const u = new URL(request.url);
+    u.hostname = hostname;
+    u.port = "";
+    u.pathname = path;
+    u.search = "";
+    if (searchParams) {
+      for (const [k, v] of searchParams) u.searchParams.set(k, v);
+    }
+    return u;
+  };
+
   // ponytail: /admin is panel-only. On business subdomains, bounce to apex.
   if (isAdminRoute && slug !== null) {
-    const apex = new URL(request.url);
-    apex.hostname = `${PANEL_SUBDOMAIN}.${ROOT_DOMAIN}`;
-    apex.port = "";
-    return NextResponse.redirect(apex);
+    return NextResponse.redirect(buildUrl("/"));
+  }
+
+  // ponytail: panel host landing -> /admin. Business hosts keep / as the menu.
+  if (isPanelHost && request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(buildUrl("/admin"));
+  }
+
+  if (isAdminRoute && !isAuthRoute && !user) {
+    const sp = new URLSearchParams();
+    sp.set("redirect", request.nextUrl.pathname);
+    return NextResponse.redirect(buildUrl("/admin/auth/login", sp));
+  }
+
+  if (isAuthRoute && user && !request.nextUrl.searchParams.has("error")) {
+    return NextResponse.redirect(buildUrl("/admin"));
   }
 
   if (isAdminRoute && !isAuthRoute && !user) {
