@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isSuperAdmin } from "@/app/lib/super-admin";
 import { ACTIVE_BUSINESS_COOKIE } from "@/app/lib/business-context";
 
@@ -18,7 +18,7 @@ export async function setActiveBusinessSlug(slug: string) {
   const clean = String(slug ?? "").toLowerCase();
   if (!SLUG_RE.test(clean)) return { error: "Slug inválido." };
 
-  const service = await supabase; // already service-level when running on server
+  const service = await createServiceClient();
   const { data, error } = await service
     .from("businesses")
     .select("id")
