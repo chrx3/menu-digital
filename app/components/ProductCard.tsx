@@ -82,7 +82,7 @@ export default function ProductCard({
   const [showSuccess, setShowSuccess] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const carneValue = isSandwich ? selectedVariante : selectedVariante;
+  const carneValue = selectedVariante;
   const precioActual = getPrecio(producto, carneValue);
   const promo2x = getPromo2x(producto, carneValue, categoria.id);
 
@@ -155,7 +155,7 @@ export default function ProductCard({
         onSelectProduct
           ? (e: React.MouseEvent) => {
               e.stopPropagation();
-              onSelectProduct(producto.nombre);
+              onSelectProduct(producto.slug || producto.nombre);
             }
           : undefined
       }

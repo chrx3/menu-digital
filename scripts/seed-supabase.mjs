@@ -117,12 +117,27 @@ const LOGO_FILES = ["mctommy.webp", "mctommy1.webp", "mctommy2.webp", "mctommy-i
 async function ensureBuckets() {
   console.log("\n📦 Step 1: Ensuring storage buckets...");
 
-  for (const bucket of ["products", "logos"]) {
-    const { data, error } = await supabase.storage.createBucket(bucket, { public: true });
+  const bucketConfigs = [
+    { id: "products", public: true },
+    { id: "logos", public: true },
+    {
+      id: "particle-icons",
+      public: true,
+      fileSizeLimit: 102400,
+      allowedMimeTypes: ["image/svg+xml"],
+    },
+  ];
+
+  for (const bucket of bucketConfigs) {
+    const { error } = await supabase.storage.createBucket(bucket.id, {
+      public: bucket.public,
+      fileSizeLimit: bucket.fileSizeLimit,
+      allowedMimeTypes: bucket.allowedMimeTypes,
+    });
     if (error && !error.message.includes("already exists")) {
-      console.error(`  ❌ Failed to create bucket "${bucket}":`, error.message);
+      console.error(`  ❌ Failed to create bucket "${bucket.id}":`, error.message);
     } else {
-      console.log(`  ✅ Bucket "${bucket}" ready (public)`);
+      console.log(`  ✅ Bucket "${bucket.id}" ready (public)`);
     }
   }
 }

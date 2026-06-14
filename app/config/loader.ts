@@ -1,28 +1,104 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getPublicClient } from "@/lib/supabase/server";
 import type { BusinessConfig, BusinessTheme, ParticleIcon } from "./types";
 import { getBusinessSlug } from "@/app/lib/business-context";
+import { unstable_cache } from "next/cache";
 
-export async function loadBusinessConfig(): Promise<BusinessConfig | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
+type SupabaseClient = ReturnType<typeof getPublicClient>;
+
+async function loadBusinessConfigWithClient(
+  slug: string,
+  client: SupabaseClient,
+): Promise<BusinessConfig | null> {
+  const { data } = await client
     .from("businesses")
     .select("*")
-    .eq("slug", getBusinessSlug())
+    .eq("slug", slug)
     .eq("is_active", true)
     .single();
   if (!data) return null;
   return mapBusinessFromDb(data);
 }
 
-export async function loadLandingConfig() {
-  const business = await loadBusinessConfig();
+export async function loadBusinessConfig(): Promise<BusinessConfig | null> {
+  const supabase = await createClient();
+  return loadBusinessConfigWithClient(await getBusinessSlug(), supabase as SupabaseClient);
+}
+
+const loadBusinessConfigCachedFn = unstable_cache(
+  async (slug: string) => loadBusinessConfigWithClient(slug, getPublicClient()),
+  ["business-config"],
+  { revalidate: 60, tags: ["business-config"] },
+);
+
+export async function loadBusinessConfigCached(slug?: string) {
+  const resolvedSlug = slug ?? (await getBusinessSlug());
+  return loadBusinessConfigCachedFn(resolvedSlug);
+}
+
+async function loadLandingConfigWithClient(
+  slug: string,
+  client: SupabaseClient,
+) {
+  const business = await loadBusinessConfigWithClient(slug, client);
   if (!business?.id) return null;
-  const [theme, translations, particleIcons] = await Promise.all([
-    loadBusinessTheme(business.id),
-    loadTranslations(business.id, business.locale),
-    loadParticleIcons(business.id),
+  const [themeResult, translationsResult, particlesResult] = await Promise.all([
+    client
+      .from("business_themes")
+      .select("*")
+      .eq("business_id", business.id)
+      .single(),
+    client
+      .from("translations")
+      .select("key, value")
+      .eq("business_id", business.id)
+      .eq("locale", business.locale),
+    client
+      .from("particle_icons")
+      .select("*")
+      .eq("business_id", business.id)
+      .eq("is_active", true)
+      .order("orden"),
   ]);
-  return { business, theme, translations, particleIcons };
+  const translations: Record<string, string> = {};
+  const translationsData = (translationsResult.data ?? []) as { key: string; value: string }[];
+  for (const row of translationsData) {
+    translations[row.key] = row.value;
+  }
+  const particlesData = (particlesResult.data ?? []) as Record<string, unknown>[];
+  const particleIcons: ParticleIcon[] = particlesData.map(
+    (row) => ({
+      id: row.id as string,
+      businessId: row.business_id as string,
+      name: row.name as string,
+      label: row.label as string,
+      orden: row.orden as number,
+      isActive: row.is_active as boolean,
+    }),
+  );
+  const themeData = themeResult.data as Record<string, unknown> | null;
+  return {
+    business,
+    theme: themeData ? mapThemeFromDb(themeData) : null,
+    translations,
+    particleIcons,
+  };
+}
+
+const loadLandingConfigCached = unstable_cache(
+  async (slug: string) => loadLandingConfigWithClient(slug, getPublicClient()),
+  ["landing-config"],
+  { revalidate: 60, tags: ["landing-config"] },
+);
+
+export async function loadLandingConfig(slug?: string) {
+  const resolvedSlug = slug ?? (await getBusinessSlug());
+  return loadLandingConfigCached(resolvedSlug);
+}
+
+export async function loadLandingConfigWithAuth() {
+  const supabase = await createClient();
+  const slug = await getBusinessSlug();
+  return loadLandingConfigWithClient(slug, supabase as SupabaseClient);
 }
 
 export async function loadBusinessTheme(
@@ -91,7 +167,9 @@ function mapBusinessFromDb(row: Record<string, unknown>): BusinessConfig {
     email: (row.email as string) || "",
     address: (row.address as string) || "",
     logoDesktop: (row.logo_desktop as string) || "",
-    logoMobile: (row.logo_mobile as string[]) || [],
+    logoMobile: Array.isArray(row.logo_mobile)
+      ? (row.logo_mobile as string[])
+      : [],
     logoRotationInterval: (row.logo_rotation_interval as number) || 4000,
     favicon: (row.favicon as string) || "",
     appleIcon: (row.apple_icon as string) || "",
@@ -125,17 +203,13 @@ function mapThemeFromDb(row: Record<string, unknown>): BusinessTheme {
     colorTextLight: (row.color_text_light as string) || "#7a4a1a",
     colorWhite: (row.color_white as string) || "#ffffff",
     fontHeading: (row.font_heading as string) || "Fredoka",
-    fontHeadingWeights: (row.font_heading_weights as number[]) || [
-      400, 500, 600, 700,
-    ],
+    fontHeadingWeights: (row.font_heading_weights as number[]) || [500, 700],
     fontBody: (row.font_body as string) || "Poppins",
-    fontBodyWeights: (row.font_body_weights as number[]) || [
-      300, 400, 500, 600, 700,
-    ],
+    fontBodyWeights: (row.font_body_weights as number[]) || [400, 600],
     headerHeightDesktop: (row.header_height_desktop as string) || "80px",
     headerHeightMobile: (row.header_height_mobile as string) || "72px",
-    particlesDesktop: (row.particles_desktop as number) || 42,
-    particlesMobile: (row.particles_mobile as number) || 22,
+    particlesDesktop: (row.particles_desktop as number) || 20,
+    particlesMobile: (row.particles_mobile as number) || 12,
     cartFlyDuration: (row.cart_fly_duration as number) || 0.7,
     cartFlyBallSize: (row.cart_fly_ball_size as number) || 44,
     reducedMotion: (row.reduced_motion as boolean) || false,

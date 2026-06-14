@@ -2,22 +2,25 @@ import type { Metadata, Viewport } from "next";
 import { Fredoka, Poppins } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { loadBusinessConfig } from "@/app/config/loader";
+import { loadBusinessConfigCached } from "@/app/config/loader";
+import { getBusinessSlug } from "@/app/lib/business-context";
 
 const fredoka = Fredoka({
   variable: "--font-fredoka",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "700"],
+  display: "swap",
 });
 
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600"],
+  display: "swap",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const config = await loadBusinessConfig().catch(() => null);
+  const config = await loadBusinessConfigCached(await getBusinessSlug()).catch(() => null);
   return {
     title: config?.seoTitle || "Menu Landing | Menú Digital",
     description: config?.seoDescription || "Menú digital interactivo.",
@@ -26,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export async function generateViewport(): Promise<Viewport> {
-  const config = await loadBusinessConfig().catch(() => null);
+  const config = await loadBusinessConfigCached(await getBusinessSlug()).catch(() => null);
   return { themeColor: config?.seoThemeColor || "#FFF8F0", colorScheme: "light" };
 }
 

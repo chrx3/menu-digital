@@ -19,7 +19,6 @@ import ParticleBackground from "@/app/components/ParticleBackground";
 import { useActiveCategory } from "@/app/hooks/useActiveCategory";
 import { useCart } from "@/app/hooks/useCart";
 import { useCartFly } from "@/app/hooks/useCartFly";
-import { menuData } from "@/app/data/menu";
 import { filterMenuBySearch } from "@/app/lib/search-menu";
 import type { WhatsAppConfig } from "@/app/lib/whatsapp-order";
 import type { Categoria } from "@/app/types";
@@ -97,7 +96,7 @@ export default function MenuLandingClient({
 }: LandingProps) {
   const { business, theme, translations } = config;
   const t = (key: string, fallback: string) => translations[key] || fallback;
-  const data = menu && menu.length ? menu : menuData;
+  const data = useMemo<Categoria[]>(() => menu ?? [], [menu]);
   const isEditor = mode === "editor";
 
   const whatsappConfig: WhatsAppConfig = {
@@ -172,6 +171,13 @@ export default function MenuLandingClient({
       .getElementById(id)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
+  const particleIconKey =
+    config.particleIcons?.map((i) => i.name).join("\0") ?? "";
+  const particleIconNames = useMemo(
+    () => (particleIconKey ? particleIconKey.split("\0") : []),
+    [particleIconKey],
+  );
+
   const wrapEdit = (
     type: string,
     slug: string | undefined,
@@ -213,7 +219,7 @@ export default function MenuLandingClient({
         desktopCount={theme?.particlesDesktop}
         mobileCount={theme?.particlesMobile}
         disabled={theme?.reducedMotion}
-        icons={config.particleIcons?.map((i) => i.name) ?? []}
+        icons={particleIconNames}
         fixed={!isEditor}
       />
       {wrapEdit(
@@ -359,7 +365,6 @@ export default function MenuLandingClient({
             width={120}
             height={40}
             className="mx-auto h-10 w-auto object-contain"
-            unoptimized
           />
           <p className="mt-2 text-sm text-marron-oscuro/50">
             {t(

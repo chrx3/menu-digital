@@ -34,3 +34,16 @@ export async function createServiceClient() {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 }
+
+let publicClientInstance: ReturnType<typeof createSupabaseClient> | null = null;
+
+export function getPublicClient() {
+  if (!publicClientInstance) {
+    publicClientInstance = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+  }
+  return publicClientInstance;
+}

@@ -39,8 +39,23 @@ export async function getBusinessConfig() {
       .eq("id", businessId)
       .single();
 
-    if (error || !data) return { error: error?.message || "Negocio no encontrado", data: undefined };
-    return { data, error: undefined };
+    if (error || !data)
+      return { error: error?.message || "Negocio no encontrado", data: undefined };
+    // Normaliza campos jsonb que el cliente espera como arrays/objetos
+    return {
+      data: {
+        ...data,
+        logo_mobile: Array.isArray(data.logo_mobile) ? data.logo_mobile : [],
+        order_channels:
+          data.order_channels && typeof data.order_channels === "object"
+            ? data.order_channels
+            : { whatsapp: true, phone: false, telegram: false },
+        promotion_types: Array.isArray(data.promotion_types)
+          ? data.promotion_types
+          : ["promo_2x"],
+      },
+      error: undefined,
+    };
   } catch (error) {
     return actionError(error);
   }

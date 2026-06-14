@@ -35,6 +35,7 @@ export interface EditorState {
   theme: BusinessTheme | null;
   translations: Record<string, string>;
   particleIcons: ParticleIcon[];
+  hiddenBuiltins: string[];
   menu: Categoria[];
 }
 
@@ -69,6 +70,8 @@ interface EditorContextValue {
   /** Scroll container for the desktop preview (overflow-auto div). */
   scrollContainer: HTMLElement | null;
   setScrollContainer: (el: HTMLElement | null) => void;
+  /** Mark the current state as the saved baseline (no dirty changes). */
+  markSaved: () => void;
 }
 
 const EditorCtx = createContext<EditorContextValue | null>(null);
@@ -93,6 +96,14 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
     null,
   );
 
+  // Revision counter avoids JSON.stringify(state) on every render.
+  // Every mutation bumps `revision`; saving syncs `savedRevision` to current.
+  const [revision, setRevision] = useState(0);
+  const [savedRevision, setSavedRevision] = useState(0);
+  const bumpRevision = useCallback(() => {
+    setRevision((r) => r + 1);
+  }, []);
+
   // Undo history (snapshots taken before each mutation).
   const stateRef = useRef(state);
   useEffect(() => {
@@ -111,9 +122,10 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
       setState(previous);
       return h.slice(0, -1);
     });
-  }, []);
+    bumpRevision();
+  }, [bumpRevision]);
 
-  const isDirty = JSON.stringify(state) !== JSON.stringify(baseline);
+  const isDirty = revision !== savedRevision;
   const canUndo = history.length > 0;
 
   const selectElement = useCallback(
@@ -125,8 +137,9 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
     (patch: Partial<BusinessConfig>) => {
       recordHistory();
       setState((s) => ({ ...s, business: { ...s.business, ...patch } }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
   const updateTheme = useCallback(
@@ -136,8 +149,9 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
         ...s,
         theme: s.theme ? { ...s.theme, ...patch } : (patch as BusinessTheme),
       }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
   const updateTranslation = useCallback(
@@ -147,16 +161,18 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
         ...s,
         translations: { ...s.translations, [key]: value },
       }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
   const updateParticleIcons = useCallback(
     (icons: ParticleIcon[]) => {
       recordHistory();
       setState((s) => ({ ...s, particleIcons: icons }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
   const updateCategory = useCallback(
@@ -168,8 +184,9 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
           cat.id === slug ? { ...cat, ...patch } : cat,
         ),
       }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
   const updateCategoryItem = useCallback(
@@ -183,15 +200,16 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
             : {
                 ...cat,
                 items: cat.items.map((item) =>
-                  item.nombre === productSlug
+                  (item.slug || item.nombre) === productSlug
                     ? { ...item, ...patch }
                     : item,
                 ),
               },
         ),
       }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
   const updateCategoryItems = useCallback(
@@ -203,22 +221,33 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
           cat.id === categorySlug ? { ...cat, items } : cat,
         ),
       }));
+      bumpRevision();
     },
-    [recordHistory],
+    [recordHistory, bumpRevision],
   );
 
-  const setMenu = useCallback((menu: Categoria[]) => {
-    // CRUD persisted externally — sync state and baseline so it isn't "dirty".
-    setState((s) => ({ ...s, menu }));
-    setBaseline((b) => ({ ...b, menu }));
-    setHistory([]);
-  }, []);
+  const setMenu = useCallback(
+    (menu: Categoria[]) => {
+      // CRUD persisted externally — sync state and baseline so it isn't "dirty".
+      setState((s) => ({ ...s, menu }));
+      setBaseline((b) => ({ ...b, menu }));
+      setHistory([]);
+      setSavedRevision((r) => r + 1);
+      setRevision((r) => r + 1);
+    },
+    [],
+  );
 
   const reloadMenu = useCallback(async () => {
     const { getEditorMenu } = await import("@/app/actions/editor");
     const fresh = await getEditorMenu();
     if (fresh) setMenu(fresh);
   }, [setMenu]);
+
+  const markSaved = useCallback(() => {
+    setBaseline(stateRef.current);
+    setSavedRevision(revision);
+  }, [revision]);
 
   const value: EditorContextValue = {
     state,
@@ -241,6 +270,7 @@ export function EditorProvider({ children, initialState }: EditorProviderProps) 
     reloadMenu,
     scrollContainer,
     setScrollContainer,
+    markSaved,
   };
 
   return <EditorCtx.Provider value={value}>{children}</EditorCtx.Provider>;

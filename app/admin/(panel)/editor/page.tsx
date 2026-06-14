@@ -1,12 +1,16 @@
-import { loadLandingConfig } from "@/app/config/loader";
+import { loadLandingConfigWithAuth } from "@/app/config/loader";
 import { loadMenuFromDB } from "@/app/config/menu-loader";
+import {
+  HIDDEN_BUILTIN_KEY,
+  parseHiddenBuiltins,
+} from "@/app/lib/particle-icons";
 import { TemplateEditor } from "@/components/admin/editor/TemplateEditor";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditorPage() {
   const [config, menu] = await Promise.all([
-    loadLandingConfig(),
+    loadLandingConfigWithAuth(),
     loadMenuFromDB(),
   ]);
 
@@ -27,6 +31,9 @@ export default async function EditorPage() {
           theme: config.theme,
           translations: config.translations ?? {},
           particleIcons: config.particleIcons ?? [],
+          hiddenBuiltins: parseHiddenBuiltins(
+            config.translations?.[HIDDEN_BUILTIN_KEY],
+          ),
           menu: menu ?? [],
         }}
       />

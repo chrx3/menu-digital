@@ -7,6 +7,20 @@ import {
   type WhatsAppConfig,
 } from "../lib/whatsapp-order";
 
+/**
+ * ID determinista basado en la combinación única del ítem.
+ * Evita colisiones cuando se agregan productos idénticos en el mismo tick
+ * y garantiza que getItemId/updateQuantity apunten al mismo registro
+ * aunque el componente se re-renderice.
+ */
+function makeItemId(
+  categoriaId: string,
+  productoNombre: string,
+  variante: string,
+): string {
+  return `${categoriaId}::${productoNombre}::${variante}`;
+}
+
 export function useCart(config?: WhatsAppConfig & { disabled?: boolean }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -33,7 +47,7 @@ export function useCart(config?: WhatsAppConfig & { disabled?: boolean }) {
         ...prev,
         {
           ...item,
-          id: `${item.categoriaId}-${item.productoNombre}-${item.variante}-${Date.now()}`,
+          id: makeItemId(item.categoriaId, item.productoNombre, item.variante),
           cantidad: 1,
         },
       ];

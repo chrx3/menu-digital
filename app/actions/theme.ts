@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError, requireAdmin } from "@/app/lib/admin-auth";
+import { PARTICLE_COUNT_DEFAULTS } from "@/app/lib/particle-icons";
 
 const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const dimensionSchema = z.string().regex(/^\d+(?:\.\d+)?(?:px|rem)$/);
@@ -75,6 +76,57 @@ export async function updateBusinessTheme(formData: FormData) {
     revalidatePath("/");
     revalidatePath("/admin");
     return { success: true, error: undefined };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+const particleCountsSchema = z.object({
+  particles_desktop: z.coerce.number().int().min(0).max(150),
+  particles_mobile: z.coerce.number().int().min(0).max(80),
+});
+
+export async function updateParticleCounts(
+  desktop: number,
+  mobile: number,
+) {
+  try {
+    const { businessId, service } = await requireAdmin();
+    const parsed = particleCountsSchema.safeParse({
+      particles_desktop: desktop,
+      particles_mobile: mobile,
+    });
+    if (!parsed.success) {
+      return { error: "Cantidad de partículas no válida", success: undefined };
+    }
+    const { error } = await service
+      .from("business_themes")
+      .update(parsed.data)
+      .eq("business_id", businessId);
+    if (error) return { error: error.message, success: undefined };
+    revalidatePath("/");
+    revalidatePath("/admin");
+    return { success: true as const, error: undefined };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+/** Aplica 20/12 partículas (recomendado para rendimiento). */
+export async function applyRecommendedParticleCounts() {
+  try {
+    const { businessId, service } = await requireAdmin();
+    const { error } = await service
+      .from("business_themes")
+      .update({
+        particles_desktop: PARTICLE_COUNT_DEFAULTS.desktop,
+        particles_mobile: PARTICLE_COUNT_DEFAULTS.mobile,
+      })
+      .eq("business_id", businessId);
+    if (error) return { error: error.message, success: undefined };
+    revalidatePath("/");
+    revalidatePath("/admin");
+    return { success: true as const, error: undefined };
   } catch (error) {
     return actionError(error);
   }

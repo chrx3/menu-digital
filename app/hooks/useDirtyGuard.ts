@@ -30,3 +30,17 @@ export function confirmDiscardChanges(isDirty: boolean): boolean {
     "Tienes cambios sin guardar. \u00bfSeguro que quieres salir y descartarlos?",
   );
 }
+
+/**
+ * In-app navigation guard for client-side links. Wrap an onClick handler so
+ * that route changes (e.g. Sidebar links, admin tabs) prompt before losing
+ * unsaved edits.
+ */
+export function guardNavigation(
+  isDirty: boolean,
+  next: () => void,
+): () => void {
+  return () => {
+    if (confirmDiscardChanges(isDirty)) next();
+  };
+}

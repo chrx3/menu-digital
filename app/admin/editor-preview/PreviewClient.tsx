@@ -10,6 +10,7 @@ interface PreviewInitialState {
   theme: BusinessTheme | null;
   translations: Record<string, string>;
   particleIcons: ParticleIcon[];
+  hiddenBuiltins: string[];
   menu: Categoria[];
 }
 

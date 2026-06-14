@@ -103,7 +103,9 @@ export default function MenuSection({
               translations={translations}
               onSelectProduct={onSelectProduct}
               selected={Boolean(
-                onSelectProduct && selectedProductSlug === producto.nombre,
+                onSelectProduct &&
+                  selectedProductSlug ===
+                    (producto.slug || producto.nombre),
               )}
             />
           </motion.div>

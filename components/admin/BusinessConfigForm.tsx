@@ -67,7 +67,7 @@ export function BusinessConfigForm() {
     const result = await getBusinessConfig();
     if (result.error) {
       toast.error(result.error);
-    } else if (result.data) {
+    } else if (result.data != null) {
       const d = result.data;
       setName(d.name || "");
       setDescription(d.description || "");
@@ -80,7 +80,9 @@ export function BusinessConfigForm() {
       setCurrency(d.currency || "CLP");
       setLang(d.lang || "es");
       setLogoDesktop(d.logo_desktop || "");
-      setLogoMobile(d.logo_mobile || []);
+      setLogoMobile(
+        Array.isArray(d.logo_mobile) ? d.logo_mobile : [],
+      );
       setLogoRotationInterval(d.logo_rotation_interval || 4000);
       setSeoTitle(d.seo_title || "");
       setSeoDescription(d.seo_description || "");

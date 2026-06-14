@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { animate, motion, useMotionValue } from "framer-motion";
 import { ShoppingCart } from "lucide-react";
@@ -137,7 +137,11 @@ function FlyBall({
 export function useCartFly({ duration = 0.7, ballSize = 44, disabled = false }: { duration?: number; ballSize?: number; disabled?: boolean } = {}) {
   const [flies, setFlies] = useState<FlyRequest[]>([]);
   const [cartPulse, setCartPulse] = useState(false);
-  const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const pulseCart = useCallback(() => {
     setCartPulse(true);

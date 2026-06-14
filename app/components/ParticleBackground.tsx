@@ -1,20 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import {
-  HotdogIcon,
-  FriesIcon,
-  BurgerIcon,
-  DrumstickIcon,
-  PopcornBagIcon,
-} from "./icons/FoodIcons";
-
-type FoodIcon = typeof HotdogIcon;
+import { ParticleIconGlyph } from "@/app/components/particles/ParticleIconGlyph";
+import { BUILTIN_PARTICLE_ICON_NAMES } from "@/app/lib/particle-icon-registry";
+import { isValidParticleIconName } from "@/app/lib/particle-icons";
 
 interface FloatingFood {
   id: string;
-  Icon: FoodIcon;
+  iconName: string;
   size: number;
   top: string;
   left: string;
@@ -28,15 +21,7 @@ interface FloatingFood {
   rotate: number;
 }
 
-const ICON_MAP: Record<string, FoodIcon> = {
-  hotdog: HotdogIcon,
-  fries: FriesIcon,
-  burger: BurgerIcon,
-  drumstick: DrumstickIcon,
-  popcorn: PopcornBagIcon,
-};
-
-const ALL_ICON_NAMES = Object.keys(ICON_MAP);
+const ALL_ICON_NAMES = BUILTIN_PARTICLE_ICON_NAMES;
 
 const COLORS = [
   "text-naranja-intenso",
@@ -46,7 +31,6 @@ const COLORS = [
   "text-naranja-claro",
 ] as const;
 
-/** Deterministic permute seeded by index */
 function seededShuffle(arr: number[], seed: number): number[] {
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
@@ -56,14 +40,16 @@ function seededShuffle(arr: number[], seed: number): number[] {
   return result;
 }
 
+function resolveActiveIconNames(activeIcons: string[]): string[] {
+  const valid = activeIcons.filter(isValidParticleIconName);
+  return valid.length > 0 ? valid : ALL_ICON_NAMES;
+}
+
 function generateIconMix(activeIcons: string[], count: number): number[] {
-  if (activeIcons.length === 0) return [];
-  const indices = activeIcons
-    .map((name) => ALL_ICON_NAMES.indexOf(name))
-    .filter((i) => i >= 0);
+  const names = resolveActiveIconNames(activeIcons);
   const mix: number[] = [];
   for (let i = 0; i < count; i++) {
-    mix.push(indices[i % indices.length]);
+    mix.push(i % names.length);
   }
   return seededShuffle(mix, 42);
 }
@@ -84,26 +70,33 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Grilla irregular + jitter para repartir iconos por toda la pantalla */
 function generateSpreadPositions(
   count: number,
   mobile: boolean,
+  preview = false,
 ): { top: number; left: number }[] {
-  const cols = mobile ? 5 : 8;
-  const rows = Math.ceil(count / cols);
+  const cols = mobile ? (preview ? 3 : 4) : preview ? 4 : 6;
   const positions: { top: number; left: number }[] = [];
 
   for (let i = 0; i < count; i++) {
     const col = i % cols;
     const row = Math.floor(i / cols);
 
-    const baseTop = (row / Math.max(rows - 1, 1)) * 94 + 3;
-    const baseLeft = (col / Math.max(cols - 1, 1)) * 94 + 3;
+    // En preview el panel es alto pero hay pocas partículas; repartir cada
+    // ícono a lo largo de todo el alto evita huecos enormes en el centro.
+    const baseTop = preview
+      ? count <= 1
+        ? 50
+        : (i / (count - 1)) * 86 + 7
+      : (row / Math.max(Math.ceil(count / cols) - 1, 1)) * 94 + 3;
+
+    const baseLeft = (col / Math.max(cols - 1, 1)) * 86 + 7;
 
     const jitterTop = ((i * 37 + row * 13) % 21) - 10;
     const jitterLeft = ((i * 53 + col * 19) % 23) - 11;
 
-    const rowOffset = row % 2 === 1 ? (mobile ? 6 : 4) : 0;
+    const rowOffset =
+      !preview && row % 2 === 1 ? (mobile ? 6 : 4) : 0;
 
     positions.push({
       top: clamp(baseTop + jitterTop, 1, 98),
@@ -117,30 +110,26 @@ function generateSpreadPositions(
 function buildParticles(
   mobile: boolean,
   activeIcons: string[],
-  desktopCount = 42,
-  mobileCount = 22,
+  desktopCount = 20,
+  mobileCount = 12,
+  preview = false,
 ): FloatingFood[] {
   const count = mobile ? mobileCount : desktopCount;
+  const iconNames = resolveActiveIconNames(activeIcons);
   const iconMix = generateIconMix(activeIcons, count);
   const colorMix = generateColorMix(count);
-  const positions = generateSpreadPositions(count, mobile);
+  const positions = generateSpreadPositions(count, mobile, preview);
 
-  const icons =
-    activeIcons.length > 0
-      ? activeIcons.map((name) => ICON_MAP[name]).filter(Boolean)
-      : ALL_ICON_NAMES.map((name) => ICON_MAP[name]);
-
-  if (icons.length === 0) return [];
-  if (iconMix.length === 0) return [];
+  if (iconNames.length === 0 || iconMix.length === 0) return [];
 
   return positions.map((pos, index) => {
     const layer = index % 3;
     const isSharp = layer === 0;
-    const iconIndex = iconMix[index % iconMix.length] % icons.length;
+    const iconIndex = iconMix[index % iconMix.length] % iconNames.length;
 
     return {
       id: `food-${index}`,
-      Icon: icons[iconIndex],
+      iconName: iconNames[iconIndex],
       top: `${pos.top}%`,
       left: `${pos.left}%`,
       color: COLORS[colorMix[index] % COLORS.length],
@@ -167,90 +156,132 @@ function FloatingFoodIcon({
   particle: FloatingFood;
   reducedMotion: boolean;
 }) {
-  const { Icon } = particle;
-  const minOpacity = particle.opacity * 0.82;
+  const { duration, delay, opacity } = particle;
+  const minOpacity = opacity * 0.82;
+  const animating = !reducedMotion;
+
+  const style: React.CSSProperties = {
+    top: particle.top,
+    left: particle.left,
+    width: particle.size,
+    height: particle.size,
+    opacity: reducedMotion ? opacity : minOpacity,
+    filter: particle.blur > 0 ? `blur(${particle.blur}px)` : undefined,
+    willChange: animating ? "transform, opacity" : undefined,
+    animation: animating
+      ? `float-${particle.id} ${duration}s ease-in-out ${delay}s infinite`
+      : undefined,
+  };
 
   return (
-    <motion.div
-      className={`absolute pointer-events-none will-change-transform ${particle.color}`}
-      style={{
-        top: particle.top,
-        left: particle.left,
-        width: particle.size,
-        height: particle.size,
-        filter: particle.blur > 0 ? `blur(${particle.blur}px)` : undefined,
-      }}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={
-        reducedMotion
-          ? { opacity: particle.opacity, scale: 1 }
-          : {
-              opacity: [minOpacity, particle.opacity, minOpacity],
-              y: [0, particle.driftY, 0],
-              x: [0, particle.driftX, 0],
-              rotate: [0, particle.rotate, 0],
-              scale: [1, 1.08, 1],
-            }
-      }
-      transition={
-        reducedMotion
-          ? { duration: 0.4 }
-          : {
-              duration: particle.duration,
-              delay: particle.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }
-      }
+    <div
+      className={`absolute pointer-events-none ${particle.color}`}
+      style={style}
       aria-hidden="true"
     >
-      <Icon
-        className="h-full w-full"
+      <ParticleIconGlyph
+        className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
+        name={particle.iconName}
         style={{
           filter: "drop-shadow(0 1px 3px rgba(61, 31, 0, 0.25))",
         }}
       />
-    </motion.div>
+    </div>
   );
 }
 
+const PREVIEW_PARTICLE_CAP = 10;
+
 export default function ParticleBackground({
-  desktopCount = 42,
-  mobileCount = 22,
+  desktopCount = 20,
+  mobileCount = 12,
   disabled = false,
   icons = ALL_ICON_NAMES,
-  /** Use absolute instead of fixed positioning (for editor previews) */
   fixed = true,
+  forceMobile,
+  preview = false,
 }: {
   desktopCount?: number;
   mobileCount?: number;
   disabled?: boolean;
   icons?: string[];
   fixed?: boolean;
+  /** Si se define, ignora el media query del viewport real (útil en previews). */
+  forceMobile?: boolean;
+  /** Modo preview admin: menos partículas, animación siempre activa. */
+  preview?: boolean;
 }) {
-  const reducedMotion = useReducedMotion();
-  const [mobile, setMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [viewportMobile, setViewportMobile] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const mobile = forceMobile ?? viewportMobile;
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 767px)");
-    const update = () => setMobile(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
+    const raf = requestAnimationFrame(() => setMounted(true));
+    const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotion = () => setPrefersReducedMotion(motionMedia.matches);
+    updateMotion();
+    motionMedia.addEventListener("change", updateMotion);
+    return () => {
+      cancelAnimationFrame(raf);
+      motionMedia.removeEventListener("change", updateMotion);
+    };
   }, []);
 
-  const activeIcons = icons.length > 0 ? icons : ALL_ICON_NAMES;
+  useEffect(() => {
+    if (forceMobile !== undefined) return;
+    const media = window.matchMedia("(max-width: 767px)");
+    const updateMobile = () => setViewportMobile(media.matches);
+    updateMobile();
+    media.addEventListener("change", updateMobile);
+    return () => media.removeEventListener("change", updateMobile);
+  }, [forceMobile]);
 
-  const particles = useMemo(
-    () => buildParticles(mobile, activeIcons, desktopCount, mobileCount),
-    [mobile, activeIcons, desktopCount, mobileCount],
-  );
+  const activeIcons = icons.length > 0 ? icons : ALL_ICON_NAMES;
+  const reducedMotion = disabled || (!preview && prefersReducedMotion);
+
+  const effectiveDesktop = preview
+    ? Math.min(desktopCount, PREVIEW_PARTICLE_CAP)
+    : desktopCount;
+  const effectiveMobile = preview
+    ? Math.min(mobileCount, Math.ceil(PREVIEW_PARTICLE_CAP * 0.6))
+    : mobileCount;
+
+  const particles = useMemo(() => {
+    const built = buildParticles(
+      mobile,
+      activeIcons,
+      effectiveDesktop,
+      effectiveMobile,
+      preview,
+    );
+    if (!preview) return built;
+    return built.map((p) => ({
+      ...p,
+      driftX: Math.round(p.driftX * 1.4),
+      driftY: Math.round(p.driftY * 1.4),
+      duration: Math.max(8, p.duration - 2),
+    }));
+  }, [mobile, activeIcons, effectiveDesktop, effectiveMobile, preview]);
+
+  const consolidatedKeyframes = useMemo(() => {
+    if (reducedMotion) return "";
+    return particles
+      .map((p) => {
+        const minOpacity = p.opacity * 0.82;
+        return `@keyframes float-${p.id}{0%,100%{transform:translate3d(0,0,0) rotate(0deg) scale(1);opacity:${minOpacity}}50%{transform:translate3d(${p.driftX}px,${p.driftY}px,0) rotate(${p.rotate}deg) scale(1.08);opacity:${p.opacity}}}`;
+      })
+      .join("");
+  }, [particles, reducedMotion]);
+
+  if (!mounted) return null;
 
   return (
     <div
       className={`${fixed ? "fixed" : "absolute"} inset-0 pointer-events-none z-0 overflow-hidden`}
       aria-hidden="true"
     >
+      {consolidatedKeyframes && <style>{consolidatedKeyframes}</style>}
       <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-naranja-mc/25 blur-[100px]" />
       <div className="absolute top-1/3 -right-16 h-80 w-80 rounded-full bg-naranja-claro/20 blur-[90px]" />
       <div className="absolute bottom-0 left-1/4 h-72 w-72 rounded-full bg-marron-medio/18 blur-[80px]" />
@@ -260,7 +291,7 @@ export default function ParticleBackground({
         <FloatingFoodIcon
           key={particle.id}
           particle={particle}
-          reducedMotion={disabled || reducedMotion || false}
+          reducedMotion={reducedMotion}
         />
       ))}
     </div>

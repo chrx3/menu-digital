@@ -33,6 +33,7 @@ function EditorToolbar() {
     state,
     canUndo,
     undo,
+    markSaved,
   } = useEditor();
   const [saving, startSaving] = useTransition();
   const [mounted, setMounted] = useState(false);
@@ -52,6 +53,7 @@ function EditorToolbar() {
       if (result.error) {
         toast.error(result.error);
       } else {
+        markSaved();
         toast.success("Todos los cambios guardados");
       }
     });

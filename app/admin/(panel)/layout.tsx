@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/app/lib/admin-auth";
+import { isSuperAdmin } from "@/app/lib/super-admin";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       .maybeSingle(),
   ]);
 
+  const superAdmin = await isSuperAdmin(user.email);
+
   return (
     <AdminShell
       businessName={business?.name ?? "Mi negocio"}
@@ -31,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       userEmail={user.email ?? null}
       primaryColor={theme?.color_primary ?? null}
       primaryTextColor={theme?.color_primary_text ?? null}
+      isSuperAdmin={superAdmin}
     >
       {children}
     </AdminShell>

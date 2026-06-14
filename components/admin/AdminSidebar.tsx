@@ -13,6 +13,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -32,6 +34,7 @@ import {
   Eye,
   LogOut,
   ChevronUp,
+  Building2,
 } from "lucide-react";
 
 interface NavItem {
@@ -65,42 +68,53 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+const PLATFORM_NAV: NavItem[] = [
+  { href: "/admin/negocios", label: "Negocios", icon: Building2 },
+];
+
 interface AdminSidebarProps {
   businessName: string;
   userEmail: string | null;
+  isSuperAdmin?: boolean;
 }
 
-export function AdminSidebar({ businessName, userEmail }: AdminSidebarProps) {
-  const pathname = usePathname();
-
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
-
-  const initials = businessName
+function getInitials(name: string) {
+  return name
     .split(" ")
     .map((word) => word[0])
     .filter(Boolean)
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+export function AdminSidebar({ businessName, userEmail, isSuperAdmin = false }: AdminSidebarProps) {
+  const pathname = usePathname();
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
+  const isDashboardActive = pathname === "/admin";
+  const initials = getInitials(businessName);
+  const accountLabel = userEmail ?? "Admin";
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              isActive={pathname === "/admin"}
+              isActive={isDashboardActive}
+              tooltip={businessName}
               render={<Link href="/admin" />}
-              tooltip="Dashboard"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <LayoutDashboard className="size-4" aria-hidden="true" />
+              <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <LayoutDashboard aria-hidden="true" />
               </div>
               <div className="flex min-w-0 flex-col gap-0.5 leading-none">
                 <span className="truncate font-semibold">{businessName}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="truncate text-xs text-muted-foreground">
                   Panel de administración
                 </span>
               </div>
@@ -108,6 +122,9 @@ export function AdminSidebar({ businessName, userEmail }: AdminSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
+      <SidebarSeparator />
+
       <SidebarContent>
         {NAV_GROUPS.map((group) => (
           <SidebarGroup key={group.label}>
@@ -130,30 +147,62 @@ export function AdminSidebar({ businessName, userEmail }: AdminSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        {isSuperAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {PLATFORM_NAV.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      isActive={isActive(item.href)}
+                      tooltip={item.label}
+                      render={<Link href={item.href} />}
+                    >
+                      <item.icon aria-hidden="true" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <Avatar className="size-6 rounded-md">
-                      <AvatarFallback className="rounded-md text-xs">
+                  <SidebarMenuButton
+                    size="lg"
+                    tooltip={accountLabel}
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  >
+                    <Avatar className="size-8 shrink-0 rounded-lg">
+                      <AvatarFallback className="rounded-lg text-xs">
                         {initials || "AD"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="truncate">{userEmail ?? "Admin"}</span>
-                    <ChevronUp className="ml-auto size-4" aria-hidden="true" />
+                    <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">{accountLabel}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        Cuenta
+                      </span>
+                    </div>
+                    <ChevronUp className="ml-auto shrink-0" aria-hidden="true" />
                   </SidebarMenuButton>
                 }
               />
               <DropdownMenuContent
                 side="top"
+                align="start"
                 className="w-(--radix-dropdown-menu-trigger-width)"
               >
                 <DropdownMenuItem render={<Link href="/" target="_blank" />}>
-                  <Store className="mr-2 size-4" aria-hidden="true" />
+                  <Store aria-hidden="true" />
                   Ver Landing
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -164,7 +213,7 @@ export function AdminSidebar({ businessName, userEmail }: AdminSidebarProps) {
                     window.location.href = "/admin/auth/login";
                   }}
                 >
-                  <LogOut className="mr-2 size-4" aria-hidden="true" />
+                  <LogOut aria-hidden="true" />
                   Cerrar Sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -172,6 +221,8 @@ export function AdminSidebar({ businessName, userEmail }: AdminSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }

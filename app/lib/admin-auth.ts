@@ -18,7 +18,7 @@ export async function requireAdmin() {
   const { data: business, error: businessError } = await service
     .from("businesses")
     .select("id")
-    .eq("slug", getBusinessSlug())
+    .eq("slug", await getBusinessSlug())
     .single();
 
   if (businessError || !business) {
@@ -73,6 +73,8 @@ export function actionError(error: unknown) {
     }
   }
 
+  // Mantener la misma forma que los returns de éxito para que TS
+  // pueda hacer narrowing con `if (result.error) ... else ...` en consumidores.
   return {
     error: message,
     data: undefined,
@@ -80,6 +82,8 @@ export function actionError(error: unknown) {
     success: undefined,
     id: undefined,
     url: undefined,
+    name: undefined,
+    label: undefined,
     count: undefined,
   };
 }

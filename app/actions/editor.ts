@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { actionError, requireAdmin } from "@/app/lib/admin-auth";
+import { isValidParticleIconName } from "@/app/lib/particle-icons";
 import { loadMenuFromDB } from "@/app/config/menu-loader";
 import { slugify } from "@/lib/utils";
 import type { BusinessConfig, BusinessTheme, ParticleIcon } from "@/app/config/types";
@@ -12,6 +13,7 @@ interface EditorStateSnapshot {
   theme: BusinessTheme | null;
   translations: Record<string, string>;
   particleIcons: ParticleIcon[];
+  hiddenBuiltins?: string[];
   menu: Categoria[];
 }
 
@@ -166,27 +168,34 @@ export async function saveEditorState(state: EditorStateSnapshot) {
       if (transErr) errors.push(`Traducción "${key}": ${transErr.message}`);
     }
 
-    // 4. Save particle icons (full replace)
+    // 4. Save particle icons (full replace, atomic via DB function)
+    const hiddenSet = new Set(state.hiddenBuiltins ?? []);
     const activeIcons = state.particleIcons
-      .filter((i) => i.isActive)
+      .filter(
+        (i) =>
+          i.isActive &&
+          !hiddenSet.has(i.name) &&
+          isValidParticleIconName(i.name) &&
+          i.label.trim().length > 0 &&
+          i.label.length <= 60,
+      )
+      .slice(0, 30)
       .map((i, idx) => ({
         business_id: businessId,
         name: i.name,
-        label: i.label,
+        label: i.label.trim(),
         orden: idx,
         is_active: true,
       }));
 
-    const { error: delIconsErr } = await service
-      .from("particle_icons")
-      .delete()
-      .eq("business_id", businessId);
-    if (!delIconsErr && activeIcons.length > 0) {
-      const { error: insIconsErr } = await service
-        .from("particle_icons")
-        .insert(activeIcons);
-      if (insIconsErr) errors.push(`Partículas: ${insIconsErr.message}`);
-    }
+    const { error: iconsErr } = await supabase.rpc(
+      "replace_particle_icons_transaction",
+      {
+        p_business_id: businessId,
+        p_icons: activeIcons,
+      },
+    );
+    if (iconsErr) errors.push(`Partículas: ${iconsErr.message}`);
 
     // 5. Save categories with full config + options
     for (const cat of state.menu) {

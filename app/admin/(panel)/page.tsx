@@ -46,7 +46,7 @@ export default async function AdminDashboard() {
         .select("id")
         .eq("business_id", businessId)
         .maybeSingle(),
-      service.storage.from("products").list(),
+      service.storage.from("products").list(businessId),
     ]);
 
   const categories = categoriesRes.data ?? [];

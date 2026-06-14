@@ -36,9 +36,13 @@ export function EditPanelProduct() {
   if (!selected?.slug) return null;
 
   const cat = state.menu.find((c) =>
-    c.items.some((p) => p.nombre === selected.slug),
+    c.items.some(
+      (p) => (p.slug || p.nombre) === selected.slug,
+    ),
   );
-  const product = cat?.items.find((p) => p.nombre === selected.slug);
+  const product = cat?.items.find(
+    (p) => (p.slug || p.nombre) === selected.slug,
+  );
   if (!product || !cat)
     return (
       <p className="text-sm text-muted-foreground">Producto no encontrado</p>
