@@ -39,6 +39,7 @@ import {
   LogOut,
   ChevronUp,
   Building2,
+  FileUp,
 } from "lucide-react";
 
 interface NavItem {
@@ -53,6 +54,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/editor", label: "Editor Visual", icon: Eye },
       { href: "/admin/menu", label: "Menú", icon: UtensilsCrossed },
+      { href: "/admin/importar", label: "Importar menú", icon: FileUp },
     ],
   },
   {
