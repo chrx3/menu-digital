@@ -19,7 +19,7 @@ Devuelve SOLO un JSON válido (sin markdown, sin comentarios) con esta estructur
 {
   "categories": [
     {
-      "slug": "identificador-en-kebab-case",  // opcional, único
+      "slug": "identificador-en-kebab-case",
       "titulo": "Nombre de la categoría",
       "descripcion": "Descripción opcional",
       "tipo_precio": "unico" | "tamano" | "proteina",
@@ -28,13 +28,13 @@ Devuelve SOLO un JSON válido (sin markdown, sin comentarios) con esta estructur
       "destacado": false,
       "productos": [
         {
-          "slug": "identificador-kebab",  // opcional
+          "slug": "identificador-kebab",
           "nombre": "Nombre del producto",
           "descripcion": "Descripción opcional",
           "imagen": "URL o vacío",
-          "precio": 5990,  // número entero CLP, sin puntos ni comas. Omitir si tiene opciones.
+          "precio": 5990,
           "destacado": false,
-          "opciones": [  // solo si tipo_precio != unico
+          "opciones": [
             { "value": "personal", "label": "Personal", "price": 5990 },
             { "value": "mediana", "label": "Mediana", "price": 8990 }
           ],
@@ -58,19 +58,128 @@ Reglas:
 - Devuelve SOLO el JSON. Sin explicaciones, sin markdown, sin bloques de código.`;
 
 function extractJson(text: string): unknown {
-  // Strip markdown fences if present
   const fence = /```(?:json)?\s*([\s\S]*?)```/i;
   const m = text.match(fence);
   if (m) return JSON.parse(m[1].trim());
-  // Find first { and last }
   const first = text.indexOf("{");
   const last = text.lastIndexOf("}");
   if (first === -1 || last === -1) throw new Error("No JSON in response");
   return JSON.parse(text.slice(first, last + 1));
 }
 
+// ponytail: pick the SDK style based on the model name. From the docs:
+//   OpenAI-compatible SDK: deepseek-v4-pro, deepseek-v4-flash, mimo-v2.5, mimo-v2.5-pro
+//   Anthropic-compatible SDK: minimax-m3, minimax-m2.7, minimax-m2.5, qwen3.7-max
+function isAnthropicModel(model: string): boolean {
+  return /^(minimax|qwen)/i.test(model);
+}
+
+const ANTHROPIC_VERSION = "2023-06-01";
+
+async function callOpenAI({
+  baseUrl,
+  apiKey,
+  model,
+  dataUrl,
+}: {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  dataUrl: string;
+}) {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Extrae el menú de este archivo y devuelve SOLO el JSON." },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    return { ok: false as const, status: res.status, text: await res.text() };
+  }
+  const completion = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  return { ok: true as const, text: completion.choices?.[0]?.message?.content };
+}
+
+async function callAnthropic({
+  baseUrl,
+  apiKey,
+  model,
+  dataUrl,
+  mimeType,
+}: {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  dataUrl: string;
+  mimeType: string;
+}) {
+  // ponytail: Anthropic Messages API needs the base64 (not data URL) plus
+  // a media_type. Build the content blocks accordingly.
+  const b64 = dataUrl.split(",", 2)[1] ?? "";
+  const isPdf = mimeType === "application/pdf";
+  const res = await fetch(`${baseUrl}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": ANTHROPIC_VERSION,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8192,
+      temperature: 0.1,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: [
+            isPdf
+              ? {
+                  type: "document",
+                  source: { type: "base64", media_type: "application/pdf", data: b64 },
+                }
+              : {
+                  type: "image",
+                  source: { type: "base64", media_type: mimeType, data: b64 },
+                },
+            {
+              type: "text",
+              text: "Extrae el menú y devuelve SOLO el JSON.",
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    return { ok: false as const, status: res.status, text: await res.text() };
+  }
+  const completion = (await res.json()) as {
+    content?: { type: string; text?: string }[];
+  };
+  const block = completion.content?.find((b) => b.type === "text");
+  return { ok: true as const, text: block?.text };
+}
+
 export async function POST(req: Request) {
-  // ponytail: gate by super_admin or business admin. Use the request's auth cookie.
   const { user } = await requireAdmin();
   if (!user) return NextResponse.json({ error: "Sin sesión." }, { status: 401 });
 
@@ -105,52 +214,24 @@ export async function POST(req: Request) {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const dataUrl = `data:${file.type};base64,${Buffer.from(bytes).toString("base64")}`;
 
-  // ponytail: OpenAI-compatible chat completion with vision input.
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Extrae el menú de este archivo y devuelve SOLO el JSON." },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-    }),
-  });
+  const result = isAnthropicModel(model)
+    ? await callAnthropic({ baseUrl, apiKey, model, dataUrl, mimeType: file.type })
+    : await callOpenAI({ baseUrl, apiKey, model, dataUrl });
 
-  if (!res.ok) {
-    const errText = await res.text();
+  if (!result.ok) {
+    console.error("IA error", result.status, result.text.slice(0, 500));
     return NextResponse.json(
-      {
-        error: `IA error ${res.status}: ${errText.slice(0, 500)}`,
-      },
+      { error: `IA error ${result.status}: ${result.text.slice(0, 800)}` },
       { status: 502 },
     );
   }
-
-  const completion = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const text = completion.choices?.[0]?.message?.content;
-  if (!text) {
-    console.error("IA empty response:", JSON.stringify(completion).slice(0, 500));
+  if (!result.text) {
     return NextResponse.json({ error: "IA no devolvió contenido." }, { status: 502 });
   }
 
   let parsed: unknown;
   try {
-    parsed = extractJson(text);
+    parsed = extractJson(result.text);
   } catch (e) {
     return NextResponse.json(
       { error: "IA devolvió JSON inválido: " + (e instanceof Error ? e.message : "?") },
