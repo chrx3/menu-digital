@@ -78,13 +78,9 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ponytail: build redirect URLs from forwarded host header.
+  // Traefik in Coolify rewrites Host to localhost, so request.url is unreliable.
   const buildUrl = (path: string, searchParams?: URLSearchParams) => {
-    const u = new URL(request.url);
-    u.hostname = hostname;
-    u.protocol = protocol.endsWith(":") ? protocol : `${protocol}:`;
-    u.port = "";
-    u.pathname = path;
-    u.search = "";
+    const u = new URL(`${protocol}://${hostname}${path}`);
     if (searchParams) {
       for (const [k, v] of searchParams) u.searchParams.set(k, v);
     }
