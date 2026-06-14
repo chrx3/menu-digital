@@ -13,7 +13,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ImportMenuPage() {
-  const { service, user } = await requireAdmin();
+  let ctx: Awaited<ReturnType<typeof requireAdmin>>;
+  try {
+    ctx = await requireAdmin();
+  } catch {
+    redirect("/admin/auth/login?error=unauthorized");
+  }
+  const { service, user } = ctx;
   const slug = await getBusinessSlug();
   const { data: business } = await service
     .from("businesses")
