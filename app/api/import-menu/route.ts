@@ -90,6 +90,7 @@ Reglas:
 - Slugs en kebab-case, sin acentos, sin caracteres especiales.
 - Si el menú tiene promociones 2x1 o similares, ponlas en "promociones" con el mismo formato que opciones.
 - theme: SOLO incluye los colores que puedas identificar con confianza a partir de la imagen. Si no estás seguro, omite ese campo (string vacío ""). Formato hex con #. Si el documento es solo texto sin diseño, omite todo el bloque "theme".
+- theme (importante para legibilidad): los colores deben garantizar contraste WCAG AA (≥4.5:1) entre texto y fondo. Si el primario es muy claro u oscuro, ajústalo o añade una versión más oscura/clara para texto. Sugiere primarios y fondos que NO compitan en luminosidad.
 - translations: incluye "es-CL" si puedes identificar textos de interfaz en español. Incluye "en-US" SOLO si el menú o documento tiene textos en inglés, o si puedes traducir razonablemente los textos de interfaz. Si no hay textos claros, omite el bloque translations o los locales que no puedas inferir.
 - Devuelve SOLO el JSON. Sin explicaciones, sin markdown, sin bloques de código.`;
 
