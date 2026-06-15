@@ -32,6 +32,13 @@ function uniqueSlug(base: string, taken: Set<string>): string {
   return out;
 }
 
+function cleanHex(value: string | undefined | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) return null;
+  return v;
+}
+
 export async function applyImportedMenu(rawJson: unknown) {
   try {
     const { businessId, service } = await requireAdmin();
@@ -42,18 +49,73 @@ export async function applyImportedMenu(rawJson: unknown) {
         data: undefined,
       };
     }
-    const { categories } = parsed.data;
+    const { categories, theme, translations } = parsed.data;
 
-    // Collect existing slugs to avoid collisions within this business.
-    const [{ data: existingCats }, { data: existingProducts }] = await Promise.all([
-      service.from("categories").select("slug").eq("business_id", businessId),
-      service.from("products").select("slug, categories!inner(business_id)").eq("categories.business_id", businessId),
-    ]);
+    const [{ data: existingCats }, { data: existingProducts }, { data: existingTheme }] =
+      await Promise.all([
+        service.from("categories").select("slug").eq("business_id", businessId),
+        service
+          .from("products")
+          .select("slug, categories!inner(business_id)")
+          .eq("categories.business_id", businessId),
+        service
+          .from("business_themes")
+          .select("id")
+          .eq("business_id", businessId)
+          .maybeSingle(),
+      ]);
     const takenCats = new Set((existingCats ?? []).map((c) => c.slug as string));
     const takenProds = new Set((existingProducts ?? []).map((p) => p.slug as string));
 
     let createdCats = 0;
     let createdProds = 0;
+    let createdTranslations = 0;
+
+    // ponytail: theme. Patch the existing row (or insert one) with whatever
+    // colors the AI returned. Empty/missing fields keep their current value.
+    if (theme) {
+      const patch: Record<string, string> = {};
+      const map: Record<string, string> = {
+        colorPrimary: "color_primary",
+        colorPrimaryLight: "color_primary_light",
+        colorPrimaryIntense: "color_primary_intense",
+        colorPrimaryText: "color_primary_text",
+        colorBackground: "color_background",
+        colorBackgroundDark: "color_background_dark",
+        colorBackgroundDeep: "color_background_deep",
+        colorTextDark: "color_text_dark",
+        colorTextMedium: "color_text_medium",
+        colorTextLight: "color_text_light",
+        colorWhite: "color_white",
+      };
+      for (const [k, v] of Object.entries(theme)) {
+        const hex = cleanHex(v);
+        if (hex) patch[map[k]] = hex;
+      }
+      if (Object.keys(patch).length > 0) {
+        if (existingTheme) {
+          await service.from("business_themes").update(patch).eq("business_id", businessId);
+        } else {
+          await service.from("business_themes").insert({ business_id: businessId, ...patch });
+        }
+      }
+    }
+
+    // ponytail: translations. Upsert by (business_id, locale, key).
+    if (translations) {
+      for (const [locale, list] of Object.entries(translations)) {
+        if (!list || list.length === 0) continue;
+        for (const t of list) {
+          const { error } = await service
+            .from("translations")
+            .upsert(
+              { business_id: businessId, locale, key: t.key, value: t.value },
+              { onConflict: "business_id,locale,key" },
+            );
+          if (!error) createdTranslations++;
+        }
+      }
+    }
 
     for (let i = 0; i < categories.length; i++) {
       const c = categories[i];
@@ -78,12 +140,11 @@ export async function applyImportedMenu(rawJson: unknown) {
       if (catError || !cat) {
         return {
           error: `Categoría "${c.titulo}": ${catError?.message ?? "sin id"}`,
-          data: { createdCats, createdProds },
+          data: { createdCats, createdProds, createdTranslations },
         };
       }
       createdCats++;
 
-      // Category options if tipo_precio != unico
       if (c.tipo_precio !== "unico" && c.productos.length > 0) {
         const allOpts = new Set<string>();
         for (const p of c.productos) for (const o of p.opciones ?? []) allOpts.add(o.value);
@@ -103,7 +164,6 @@ export async function applyImportedMenu(rawJson: unknown) {
         }
       }
 
-      // Products
       for (let j = 0; j < c.productos.length; j++) {
         const p = c.productos[j];
         const productSlug = uniqueSlug(p.slug ?? slugify(p.nombre), takenProds);
@@ -130,7 +190,7 @@ export async function applyImportedMenu(rawJson: unknown) {
         if (prodError || !prod) {
           return {
             error: `Producto "${p.nombre}": ${prodError?.message ?? "sin id"}`,
-            data: { createdCats, createdProds },
+            data: { createdCats, createdProds, createdTranslations },
           };
         }
         createdProds++;
@@ -148,16 +208,14 @@ export async function applyImportedMenu(rawJson: unknown) {
         }
 
         if (p.opciones?.length) {
-          await service
-            .from("product_prices")
-            .insert(
-              p.opciones.map((o, idx) => ({
-                product_id: prod.id,
-                option_value: o.value,
-                precio: o.price,
-                orden: idx,
-              })),
-            );
+          await service.from("product_prices").insert(
+            p.opciones.map((o, idx) => ({
+              product_id: prod.id,
+              option_value: o.value,
+              precio: o.price,
+              orden: idx,
+            })),
+          );
         }
 
         if (p.promociones?.length) {
@@ -176,7 +234,7 @@ export async function applyImportedMenu(rawJson: unknown) {
     }
 
     refreshMenu();
-    return { data: { createdCats, createdProds } };
+    return { data: { createdCats, createdProds, createdTranslations } };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Error desconocido", data: undefined };
   }

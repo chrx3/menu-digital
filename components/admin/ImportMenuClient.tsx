@@ -145,6 +145,10 @@ export function ImportMenuClient({ businessName }: Props) {
     0,
   );
 
+  // ponytail: theme + translations shown once at the top if any job has them.
+  const sampleTheme = jobs.find((j) => j.result?.theme)?.result?.theme;
+  const sampleTranslations = jobs.find((j) => j.result?.translations)?.result?.translations;
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -190,6 +194,46 @@ export function ImportMenuClient({ businessName }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {(sampleTheme || sampleTranslations) && (
+              <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                {sampleTheme && (
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <p className="mb-2 text-xs font-medium">Tema detectado</p>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(sampleTheme)
+                        .filter(([, v]) => v && typeof v === "string" && v.startsWith("#"))
+                        .slice(0, 10)
+                        .map(([k, v]) => (
+                          <div key={k} className="flex items-center gap-1.5 rounded-md border bg-background px-1.5 py-1 text-[10px]">
+                            <span
+                              className="size-3 shrink-0 rounded-sm border"
+                              style={{ backgroundColor: v }}
+                              aria-hidden="true"
+                            />
+                            <span className="font-mono">{v}</span>
+                            <span className="text-muted-foreground">{k}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {sampleTranslations && (
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    <p className="mb-2 text-xs font-medium">Traducciones detectadas</p>
+                    <div className="flex flex-wrap gap-1 text-[10px]">
+                      {Object.entries(sampleTranslations).map(([locale, list]) => (
+                        <span
+                          key={locale}
+                          className="rounded-md border bg-background px-1.5 py-1 font-mono"
+                        >
+                          {locale}: {list?.length ?? 0}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <ul className="flex flex-col gap-2">
               {jobs.map((j) => (
                 <li
