@@ -177,7 +177,20 @@ export function ImagePicker({
         <div className="flex flex-1 flex-col gap-2">
           <Input
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              const url = e.target.value.trim();
+              // ponytail: only allow our Supabase storage bucket. External
+              // URLs break next/image and are a security risk (XSS via SVG).
+              if (url === "") {
+                onChange("");
+                return;
+              }
+              if (!url.includes("supabase.co/storage/v1/object/public/")) {
+                toast.error("Solo se permiten URLs de tu propio storage. Sube la imagen.");
+                return;
+              }
+              onChange(url);
+            }}
             placeholder={placeholder}
           />
           <div className="flex flex-wrap gap-2">

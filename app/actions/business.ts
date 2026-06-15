@@ -22,8 +22,18 @@ const businessSchema = z.object({
   phone: z.string().trim().max(40).optional().default(""),
   email: z.string().trim().max(160).optional().default(""),
   address: z.string().trim().max(240).optional().default(""),
-  logo_desktop: z.string().trim().max(1000),
-  logo_mobile: z.array(z.string().trim().max(1000)).max(10),
+  logo_desktop: z
+    .string()
+    .trim()
+    .max(1000)
+    .refine(
+      (s) => s === "" || s.includes("supabase.co/storage/v1/object/public/"),
+      { message: "Logo debe ser una URL de tu storage de Supabase." },
+    ),
+  logo_mobile: z
+    .array(z.string().trim().max(1000))
+    .max(10)
+    .default([]),
   logo_rotation_interval: z.coerce.number().int().min(1000).max(60000),
   seo_title: z.string().trim().max(160),
   seo_description: z.string().trim().max(320),
