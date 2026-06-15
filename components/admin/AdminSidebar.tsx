@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { setActiveBusinessSlug } from "@/app/actions/active-business";
 import { toast } from "sonner";
@@ -98,6 +98,7 @@ function getInitials(name: string) {
 
 export function AdminSidebar({ businessName, businessSlug, userEmail, isSuperAdmin = false, businesses }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [activeSlug, setActiveSlug] = useState(businessSlug);
   const [pending, start] = useTransition();
 
@@ -114,7 +115,8 @@ export function AdminSidebar({ businessName, businessSlug, userEmail, isSuperAdm
         return;
       }
       toast.success("Negocio cambiado");
-      window.location.reload();
+      // ponytail: refresh server components without a full page reload.
+      router.refresh();
     });
   }
 
