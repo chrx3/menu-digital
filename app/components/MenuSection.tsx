@@ -77,7 +77,7 @@ export default function MenuSection({
       >
         {categoria.items.map((producto, index) => (
           <motion.div
-            key={`${categoria.id}-${producto.nombre}`}
+            key={producto.id ?? `${categoria.id}-${producto.slug ?? producto.nombre}-${index}`}
             className="h-full"
             variants={{
               hidden: { opacity: 0, y: isSearching ? 8 : 20 },
