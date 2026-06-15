@@ -28,9 +28,16 @@ interface ImageFile {
   created: string;
 }
 
+interface UploadJob {
+  id: string;
+  fileName: string;
+  status: "pending" | "uploading" | "done" | "error";
+  error?: string;
+}
+
 export default function ImagenesPage() {
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [jobs, setJobs] = useState<UploadJob[]>([]);
   const [images, setImages] = useState<ImageFile[]>([]);
   const [bucket, setBucket] = useState("products");
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
@@ -51,58 +58,82 @@ export default function ImagenesPage() {
     setLoading(false);
   }
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploading = jobs.some((j) => j.status === "uploading" || j.status === "pending");
 
+  async function processFile(file: File): Promise<{ ok: true; formData: FormData; conversionInfo: string } | { ok: false; error: string }> {
     const validation = validateImageFile(file);
-    if (validation) {
-      toast.error(validation.message);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    if (validation) return { ok: false, error: validation.message };
+
+    let fileToUpload = file;
+    let conversionInfo = "";
+    if (file.type !== "image/svg+xml") {
+      const result = await convertToWebP(file);
+      fileToUpload = result.file;
+      if (result.originalSize !== result.convertedSize) {
+        const saved = (
+          ((result.originalSize - result.convertedSize) / result.originalSize) *
+          100
+        ).toFixed(0);
+        conversionInfo = `Optimizada: ${saved}% más liviana`;
+      }
+    }
+
+    const formData = new FormData();
+    formData.set("file", fileToUpload);
+    formData.set("bucket", bucket);
+    return { ok: true, formData, conversionInfo };
+  }
+
+  async function uploadOne(file: File, jobId: string) {
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "uploading" } : j)));
+    const result = await processFile(file);
+    if (!result.ok) {
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "error", error: result.error } : j)));
       return;
     }
-
-    setUploading(true);
-    try {
-      let fileToUpload = file;
-      let conversionInfo = "";
-      if (file.type !== "image/svg+xml") {
-        const result = await convertToWebP(file);
-        fileToUpload = result.file;
-        if (result.originalSize !== result.convertedSize) {
-          const saved = (
-            ((result.originalSize - result.convertedSize) /
-              result.originalSize) *
-            100
-          ).toFixed(0);
-          conversionInfo = `Optimizada: ${saved}% más liviana`;
-        }
-      }
-
-      const formData = new FormData();
-      formData.set("file", fileToUpload);
-      formData.set("bucket", bucket);
-
-      const result = await uploadImage(formData);
-      if (result.error) {
-        toast.error(result.error);
-      } else if (result.success) {
-        toast.success(
-          conversionInfo
-            ? `Imagen subida. ${conversionInfo}`
-            : "Imagen subida correctamente",
-        );
-        loadImages(bucket);
-      }
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Error al procesar la imagen",
-      );
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    const r = await uploadImage(result.formData);
+    if (r.error) {
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "error", error: r.error } : j)));
+    } else {
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "done" } : j)));
     }
-  };
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    const newJobs: UploadJob[] = files.map((f) => ({
+      id: crypto.randomUUID(),
+      fileName: f.name,
+      status: "pending",
+    }));
+    setJobs((prev) => [...prev, ...newJobs]);
+
+    // ponytail: run uploads in parallel but with a small concurrency cap.
+    const CONCURRENCY = 3;
+    const queue = [...files.entries()];
+    const idMap = new Map<number, string>();
+    files.forEach((_, i) => idMap.set(i, newJobs[i].id));
+
+    async function worker() {
+      while (queue.length > 0) {
+        const [idx, file] = queue.shift()!;
+        await uploadOne(file, idMap.get(idx)!);
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, () => worker()));
+
+    const failed = newJobs.filter((j) => j.status === "error").length;
+    const succeeded = newJobs.length - failed;
+    if (succeeded > 0) toast.success(`${succeeded} subida(s) OK${failed ? `, ${failed} fallaron` : ""}`);
+    loadImages(bucket);
+  }
+
+  function clearDone() {
+    setJobs((prev) => prev.filter((j) => j.status === "uploading" || j.status === "pending"));
+  }
 
   const handleDelete = async (name: string) => {
     if (!window.confirm(`¿Eliminar "${name}"?`)) return;
@@ -134,8 +165,7 @@ export default function ImagenesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Imágenes</h1>
           <p className="text-muted-foreground">
-            {images.length} {images.length === 1 ? "imagen" : "imágenes"} en el
-            bucket
+            {images.length} {images.length === 1 ? "imagen" : "imágenes"} en el bucket
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -157,6 +187,7 @@ export default function ImagenesPage() {
           <input
             ref={fileInputRef}
             type="file"
+            multiple
             accept="image/webp,image/jpeg,image/png,image/svg+xml"
             onChange={handleUpload}
             className="hidden"
@@ -171,10 +202,45 @@ export default function ImagenesPage() {
             ) : (
               <Upload className="mr-2 size-4" />
             )}
-            {uploading ? "Subiendo…" : "Subir Imagen"}
+            {uploading ? `Subiendo ${jobs.filter((j) => j.status === "uploading" || j.status === "pending").length}…` : "Subir Imágenes"}
           </Button>
         </div>
       </div>
+
+      {jobs.length > 0 && (
+        <Card>
+          <CardContent className="p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-medium">
+                Cola de subida ({jobs.length})
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={clearDone}
+                disabled={uploading}
+              >
+                Limpiar finalizadas
+              </Button>
+            </div>
+            <ul className="flex flex-col gap-1">
+              {jobs.map((j) => (
+                <li
+                  key={j.id}
+                  className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1 text-xs"
+                >
+                  {j.status === "pending" && <span className="size-2 rounded-full bg-muted-foreground/40" />}
+                  {j.status === "uploading" && <Loader2 className="size-3 animate-spin" />}
+                  {j.status === "done" && <Check className="size-3 text-emerald-600" />}
+                  {j.status === "error" && <span className="text-destructive">✕</span>}
+                  <span className="flex-1 truncate">{j.fileName}</span>
+                  {j.error && <span className="text-destructive">{j.error}</span>}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <Card>
@@ -189,7 +255,7 @@ export default function ImagenesPage() {
             <div className="text-center">
               <p className="font-medium">No hay imágenes</p>
               <p className="text-sm text-muted-foreground">
-                Subí tu primera imagen para empezar
+                Subí tus primeras imágenes (puedes seleccionar varias a la vez)
               </p>
             </div>
           </CardContent>
