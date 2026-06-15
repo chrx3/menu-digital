@@ -49,6 +49,11 @@ export async function requireAdmin() {
 
   // No business context or no membership. Super-admin fallback.
   if (await isSuperAdmin(user.email)) {
+    // ponytail: use the active slug (cookie/header/env) instead of the
+    // first active business, so the editor reflects the chosen business.
+    if (business) {
+      return { businessId: business.id as string, service, supabase, user };
+    }
     const { data: anyBusiness } = await service
       .from("businesses")
       .select("id")
