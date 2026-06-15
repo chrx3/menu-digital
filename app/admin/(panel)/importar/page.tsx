@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { ArrowLeft, FileUp } from "lucide-react";
 import { requireAdmin } from "@/app/lib/admin-auth";
 import { isSuperAdmin } from "@/app/lib/super-admin";
@@ -50,7 +51,9 @@ export default async function ImportMenuPage() {
           <strong>{business?.name ?? "(sin nombre)"}</strong> y la IA lo convierte en categorías y productos listos para revisar.
         </p>
       </div>
-      <ImportMenuClient />
+      <Suspense fallback={null}>
+        <ImportMenuClient businessName={business?.name ?? "este negocio"} />
+      </Suspense>
     </div>
   );
 }
