@@ -68,34 +68,17 @@ export async function POST(req: Request) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const b64 = Buffer.from(bytes).toString("base64");
+  const dataUrl = `data:${file.type};base64,${b64}`;
 
-  const res = await fetch("https://api.minimax.io/v1/messages", {
+  const res = await fetch("https://api.minimax.io/v1/coding_plan/vlm", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "minimax-m3",
-      max_tokens: 1024,
-      temperature: 0.3,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: file.type, data: b64 },
-            },
-            {
-              type: "text",
-              text: "Describe este plato para el menú digital.",
-            },
-          ],
-        },
-      ],
+      prompt: SYSTEM_PROMPT + "\n\nAnaliza esta imagen de comida.",
+      image_url: dataUrl,
     }),
   });
 
@@ -109,16 +92,17 @@ export async function POST(req: Request) {
   }
 
   const completion = (await res.json()) as {
-    content?: { type: string; text?: string }[];
+    content?: string;
+    base_resp?: { status_code?: number; status_msg?: string };
   };
-  const block = completion.content?.find((b) => b.type === "text");
-  if (!block?.text) {
+  const text = completion.content;
+  if (!text) {
     return NextResponse.json({ error: "MiniMax no devolvió contenido." }, { status: 502 });
   }
 
   let parsed: unknown;
   try {
-    parsed = extractJson(block.text);
+    parsed = extractJson(text);
   } catch (e) {
     return NextResponse.json(
       { error: "JSON inválido: " + (e instanceof Error ? e.message : "?") },

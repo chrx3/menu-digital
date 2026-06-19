@@ -105,8 +105,7 @@ function extractJson(text: string): unknown {
 }
 
 /**
- * Call MiniMax API directly (global: api.minimax.io)
- * Uses the Anthropic-compatible Messages API format that MiniMax supports.
+ * Call MiniMax VLM API directly (global: api.minimax.io)
  */
 async function callMiniMax({
   apiKey,
@@ -119,41 +118,15 @@ async function callMiniMax({
   dataUrl: string;
   mimeType: string;
 }) {
-  const b64 = dataUrl.split(",", 2)[1] ?? "";
-  const isPdf = mimeType === "application/pdf";
-
-  const res = await fetch("https://api.minimax.io/v1/messages", {
+  const res = await fetch("https://api.minimax.io/v1/coding_plan/vlm", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model,
-      max_tokens: 8192,
-      temperature: 0.1,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            isPdf
-              ? {
-                  type: "document",
-                  source: { type: "base64", media_type: "application/pdf", data: b64 },
-                }
-              : {
-                  type: "image",
-                  source: { type: "base64", media_type: mimeType, data: b64 },
-                },
-            {
-              type: "text",
-              text: "Extrae el menú y devuelve SOLO el JSON.",
-            },
-          ],
-        },
-      ],
+      prompt: SYSTEM_PROMPT + "\n\nExtrae el menú y devuelve SOLO el JSON.",
+      image_url: dataUrl,
     }),
   });
 
@@ -161,10 +134,10 @@ async function callMiniMax({
     return { ok: false as const, status: res.status, text: await res.text() };
   }
   const completion = (await res.json()) as {
-    content?: { type: string; text?: string }[];
+    content?: string;
+    base_resp?: { status_code?: number; status_msg?: string };
   };
-  const block = completion.content?.find((b) => b.type === "text");
-  return { ok: true as const, text: block?.text };
+  return { ok: true as const, text: completion.content };
 }
 
 export async function POST(req: Request) {
