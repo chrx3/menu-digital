@@ -23,7 +23,7 @@ interface ThemeColors {
 
 interface Props {
   colors: ThemeColors;
-  onChange: (next: Partial<ThemeColors>) => void;
+  onChange?: (next: Partial<ThemeColors>) => void;
   businessName: string;
 }
 
@@ -81,7 +81,7 @@ export function LiveThemePreview({ colors, onChange, businessName }: Props) {
       toast.error("No se pudo derivar la paleta. Color inválido?");
       return;
     }
-    onChange(derived);
+    onChange?.(derived);
     toast.success("Paleta ajustada para mejor contraste");
   }
 

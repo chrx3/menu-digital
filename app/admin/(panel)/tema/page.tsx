@@ -48,10 +48,6 @@ export default async function TemaPage() {
           <LiveThemePreview
             colors={colors}
             businessName={business?.name ?? "Tu negocio"}
-            onChange={() => {
-              // ponytail: live edits require lifting state up. This preview
-              // re-renders on save.
-            }}
           />
           <p className="text-xs text-muted-foreground">
             El preview muestra el theme actual. Edita los colores y guarda para verlo reflejado. Usa "Auto-ajustar" para una paleta derivada con mejor contraste.
