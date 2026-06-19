@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ImagePicker } from "../ImagePicker";
 import { EditPanelSection } from "./EditPanelSection";
-import { X, Trash2, Plus } from "lucide-react";
+import { X, Trash2, Plus, Sparkles, Loader2 } from "lucide-react";
 import { deleteProduct } from "@/app/actions/products";
 import type { Producto, PreciosSandwich, PreciosSimple } from "@/app/types";
 
@@ -32,6 +32,8 @@ export function EditPanelProduct() {
     selectElement,
     reloadMenu,
   } = useEditor();
+
+  const [describing, setDescribing] = useState(false);
 
   if (!selected?.slug) return null;
 
@@ -75,6 +77,50 @@ export function EditPanelProduct() {
     toast.success("Producto eliminado");
     selectElement(null);
     await reloadMenu();
+  };
+
+  const handleDescribe = async () => {
+    const imageUrl = currentProduct.imagen;
+    if (!imageUrl) {
+      toast.error("Sube o selecciona una imagen primero.");
+      return;
+    }
+
+    setDescribing(true);
+    try {
+      // Fetch the image as a blob
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) throw new Error("No se pudo descargar la imagen.");
+      const blob = await imgRes.blob();
+
+      const form = new FormData();
+      form.set("file", new File([blob], "product.webp", { type: blob.type }));
+
+      const res = await fetch("/api/describe-product", {
+        method: "POST",
+        body: form,
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Error al generar descripción.");
+      }
+
+      const data = json.data;
+      const patch: Partial<Producto> = {};
+      if (data.nombre) patch.nombre = data.nombre;
+      if (data.descripcion) patch.detalle = data.descripcion;
+      if (data.ingredientes) patch.ingredientes = data.ingredientes;
+
+      update(patch);
+      toast.success("Descripción generada con IA ✨");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Error al generar descripción",
+      );
+    } finally {
+      setDescribing(false);
+    }
   };
 
   function updateCategoryOptions(
@@ -161,6 +207,23 @@ export function EditPanelProduct() {
           bucket="products"
           label="Imagen"
         />
+        {currentProduct.imagen && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="self-start"
+            disabled={describing}
+            onClick={handleDescribe}
+          >
+            {describing ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {describing ? "Generando..." : "Descripción con IA"}
+          </Button>
+        )}
         <Label className="cursor-pointer">
           <Checkbox
             checked={currentProduct.destacado || false}

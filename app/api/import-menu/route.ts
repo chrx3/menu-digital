@@ -104,80 +104,30 @@ function extractJson(text: string): unknown {
   return JSON.parse(text.slice(first, last + 1));
 }
 
-// ponytail: pick the SDK style based on the model name. From the docs:
-//   OpenAI-compatible SDK: deepseek-v4-pro, deepseek-v4-flash, mimo-v2.5, mimo-v2.5-pro
-//   Anthropic-compatible SDK: minimax-m3, minimax-m2.7, minimax-m2.5, qwen3.7-max
-function isAnthropicModel(model: string): boolean {
-  return /^(minimax|qwen)/i.test(model);
-}
-
-const ANTHROPIC_VERSION = "2023-06-01";
-
-async function callOpenAI({
-  baseUrl,
-  apiKey,
-  model,
-  dataUrl,
-}: {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  dataUrl: string;
-}) {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Extrae el menú de este archivo y devuelve SOLO el JSON." },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    return { ok: false as const, status: res.status, text: await res.text() };
-  }
-  const completion = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  return { ok: true as const, text: completion.choices?.[0]?.message?.content };
-}
-
-async function callAnthropic({
-  baseUrl,
+/**
+ * Call MiniMax API directly (global: api.minimax.io)
+ * Uses the Anthropic-compatible Messages API format that MiniMax supports.
+ */
+async function callMiniMax({
   apiKey,
   model,
   dataUrl,
   mimeType,
 }: {
-  baseUrl: string;
   apiKey: string;
   model: string;
   dataUrl: string;
   mimeType: string;
 }) {
-  // ponytail: Anthropic Messages API needs the base64 (not data URL) plus
-  // a media_type. Build the content blocks accordingly.
   const b64 = dataUrl.split(",", 2)[1] ?? "";
   const isPdf = mimeType === "application/pdf";
-  const res = await fetch(`${baseUrl}/messages`, {
+
+  const res = await fetch("https://api.minimax.io/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
+      "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
       model,
@@ -206,6 +156,7 @@ async function callAnthropic({
       ],
     }),
   });
+
   if (!res.ok) {
     return { ok: false as const, status: res.status, text: await res.text() };
   }
@@ -238,32 +189,29 @@ export async function POST(req: Request) {
     );
   }
 
-  const baseUrl = process.env.OPENCODE_GO_BASE_URL ?? "https://api.opencode.ai/v1";
-  const apiKey = process.env.OPENCODE_GO_API_KEY;
+  const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "OPENCODE_GO_API_KEY no está configurada en el servidor." },
+      { error: "MINIMAX_API_KEY no está configurada en el servidor." },
       { status: 500 },
     );
   }
-  const model = process.env.OPENCODE_GO_MODEL ?? "minimax-m3";
+  const model = process.env.MINIMAX_IMPORT_MODEL ?? "minimax-m3";
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const dataUrl = `data:${file.type};base64,${Buffer.from(bytes).toString("base64")}`;
 
-  const result = isAnthropicModel(model)
-    ? await callAnthropic({ baseUrl, apiKey, model, dataUrl, mimeType: file.type })
-    : await callOpenAI({ baseUrl, apiKey, model, dataUrl });
+  const result = await callMiniMax({ apiKey, model, dataUrl, mimeType: file.type });
 
   if (!result.ok) {
-    console.error("IA error", result.status, result.text.slice(0, 500));
+    console.error("MiniMax error", result.status, result.text.slice(0, 500));
     return NextResponse.json(
-      { error: `IA error ${result.status}: ${result.text.slice(0, 800)}` },
+      { error: `MiniMax error ${result.status}: ${result.text.slice(0, 800)}` },
       { status: 502 },
     );
   }
   if (!result.text) {
-    return NextResponse.json({ error: "IA no devolvió contenido." }, { status: 502 });
+    return NextResponse.json({ error: "MiniMax no devolvió contenido." }, { status: 502 });
   }
 
   let parsed: unknown;
@@ -271,7 +219,7 @@ export async function POST(req: Request) {
     parsed = extractJson(result.text);
   } catch (e) {
     return NextResponse.json(
-      { error: "IA devolvió JSON inválido: " + (e instanceof Error ? e.message : "?") },
+      { error: "MiniMax devolvió JSON inválido: " + (e instanceof Error ? e.message : "?") },
       { status: 502 },
     );
   }
