@@ -101,7 +101,7 @@ export default function Header({
             <div className="mx-8 hidden max-w-md flex-1 md:flex">
               <div className="relative w-full">
                 <Search
-                  className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-naranja-mc/60"
+                  className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-marron-oscuro/40"
                   aria-hidden="true"
                 />
                 <input
@@ -114,7 +114,7 @@ export default function Header({
                   placeholder={searchPlaceholder}
                   value={searchTerm}
                   onChange={(event) => onSearchChange(event.target.value)}
-                  className="w-full rounded-xl border-2 border-naranja-mc/30 bg-crema/90 py-2.5 pl-10 pr-10 font-medium text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:border-naranja-mc focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/20"
+                  className="w-full rounded-full border-0 bg-white/15 py-2.5 pl-11 pr-10 text-sm font-medium text-white placeholder:text-white/50 focus-visible:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-all duration-200"
                 />
                 {hasSearch && (
                   <button
@@ -124,7 +124,7 @@ export default function Header({
                       desktopSearchRef.current?.focus();
                     }}
                     aria-label="Limpiar búsqueda"
-                    className="absolute right-2 top-1/2 min-h-9 min-w-9 -translate-y-1/2 rounded-lg text-marron-oscuro/60 hover:bg-marron-oscuro/10 hover:text-marron-oscuro focus-visible:ring-2 focus-visible:ring-naranja-mc/40"
+                    className="absolute right-2 top-1/2 min-h-9 min-w-9 -translate-y-1/2 rounded-full text-white/60 hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/30"
                   >
                     <X className="mx-auto h-5 w-5" aria-hidden="true" />
                   </button>
@@ -163,7 +163,7 @@ export default function Header({
           >
             <div className="relative mx-auto max-w-7xl">
               <Search
-                className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-naranja-mc/60"
+                className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-marron-oscuro/40"
                 aria-hidden="true"
               />
               <input
@@ -176,7 +176,7 @@ export default function Header({
                 placeholder={searchPlaceholder}
                 value={searchTerm}
                 onChange={(event) => onSearchChange(event.target.value)}
-                className="w-full rounded-xl border-2 border-naranja-mc/30 bg-crema py-2.5 pl-10 pr-4 font-medium text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:border-naranja-mc focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/20"
+                className="w-full rounded-full border-0 bg-white/90 py-2.5 pl-11 pr-4 text-sm font-medium text-marron-oscuro placeholder:text-marron-oscuro/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-naranja-mc/30"
               />
             </div>
           </motion.div>

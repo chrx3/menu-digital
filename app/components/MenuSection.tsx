@@ -47,18 +47,21 @@ export default function MenuSection({
         key={`${categoria.id}-header-${menuRevealKey}-${isSearching}`}
         disabled={isSearching}
       >
-        <header className="mb-6 pb-3 border-b-2 border-naranja-mc/25">
+        <header className="mb-8">
           <h2
-            className="text-2xl sm:text-3xl font-bold text-naranja-texto text-pretty"
+            className="text-2xl sm:text-3xl font-bold text-marron-oscuro tracking-tight"
             style={{
               fontFamily: "var(--font-fredoka), system-ui, sans-serif",
+              letterSpacing: "-0.02em",
             }}
           >
             {categoria.titulo}
           </h2>
-          <p className="text-marron-oscuro/65 text-sm sm:text-base mt-1 max-w-2xl">
-            {categoria.descripcion}
-          </p>
+          {categoria.descripcion && (
+            <p className="text-marron-oscuro/55 text-sm sm:text-base mt-1.5 max-w-2xl">
+              {categoria.descripcion}
+            </p>
+          )}
         </header>
       </ScrollReveal>
 
@@ -73,7 +76,7 @@ export default function MenuSection({
             },
           },
         }}
-        className="grid grid-cols-1 items-stretch sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+        className="grid grid-cols-1 items-stretch sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
       >
         {categoria.items.map((producto, index) => (
           <motion.div

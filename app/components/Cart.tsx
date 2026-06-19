@@ -99,9 +99,10 @@ export default function Cart({
           animate={{
             ...(cartPulse && { scale: [1, 1.25, 1] }),
           }}
-          className="relative w-14 h-14 bg-gradient-to-br from-naranja-mc to-naranja-claro rounded-full shadow-xl shadow-naranja-mc/40 flex items-center justify-center shrink-0"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          className="relative w-14 h-14 bg-naranja-mc rounded-full flex items-center justify-center shrink-0"
+          style={{ boxShadow: "var(--shadow-elevated)" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           data-cart-fly-target
           aria-label={`Abrir carrito con ${itemCount} productos`}
         >
@@ -130,9 +131,10 @@ export default function Cart({
           ...(cartPulse && { scale: [1, 1.15, 1] }),
         }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 hidden lg:flex items-center gap-2 bg-gradient-to-r from-naranja-mc to-naranja-claro text-white px-5 py-3.5 rounded-2xl shadow-lg shadow-naranja-mc/30"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-40 hidden lg:flex items-center gap-2 bg-naranja-mc text-white px-5 py-3.5 rounded-2xl"
+        style={{ boxShadow: "var(--shadow-elevated)" }}
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
         data-cart-fly-target
         aria-label={`Abrir carrito con ${itemCount} productos`}
       >
@@ -144,7 +146,7 @@ export default function Cart({
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
-                className="absolute -top-2 -right-2 bg-[#3D1F00] text-[#F5821F] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                className="absolute -top-2 -right-2 bg-marron-oscuro text-naranja-mc text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
               >
                 {itemCount}
               </motion.span>
@@ -185,9 +187,9 @@ export default function Cart({
             >
               <div className="flex items-center justify-between p-4 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-[#F5821F]" />
+                  <ShoppingCart className="w-5 h-5 text-naranja-mc" />
                   <h2
-                    className="text-xl font-bold text-[#F5821F]"
+                    className="text-xl font-bold text-naranja-mc"
                     style={{
                       fontFamily: "var(--font-fredoka), system-ui, sans-serif",
                     }}
@@ -236,7 +238,7 @@ export default function Cart({
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
-                              <p className="text-[#3D1F00] font-semibold text-sm">
+                              <p className="text-marron-oscuro font-semibold text-sm">
                                 {item.categoriaId === "sandwiches"
                                   ? formatSandwichDisplayName(
                                       item.productoNombre,
@@ -245,11 +247,11 @@ export default function Cart({
                                   : item.productoNombre}
                               </p>
                               {item.categoriaId !== "sandwiches" && (
-                                <p className="text-[#3D1F00]/50 text-xs">
+                                <p className="text-marron-oscuro/50 text-xs">
                                   {item.variante}
                                 </p>
                               )}
-                              <p className="text-[#F5821F] text-xs font-medium">
+                              <p className="text-naranja-mc text-xs font-medium">
                                 {item.categoriaTitulo}
                               </p>
                             </div>
@@ -257,7 +259,7 @@ export default function Cart({
                               onClick={() => onRemoveItem(item.id)}
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              className="p-1 text-[#3D1F00]/40 hover:text-red-500 transition-colors"
+                              className="p-1 text-marron-oscuro/40 hover:text-red-500 transition-colors"
                               aria-label={`Eliminar ${item.productoNombre}`}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -265,14 +267,14 @@ export default function Cart({
                           </div>
 
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center bg-[#F5821F]/10 rounded-lg border border-[#F5821F]/20">
+                            <div className="flex items-center bg-naranja-mc/10 rounded-lg border border-naranja-mc/20">
                               <motion.button
                                 onClick={() =>
                                   onUpdateQuantity(item.id, item.cantidad - 1)
                                 }
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="p-1.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                                className="p-1.5 text-marron-oscuro/60 hover:text-marron-oscuro transition-colors"
                                 aria-label={`Quitar una unidad de ${item.productoNombre}`}
                               >
                                 <Minus className="w-3 h-3" />
@@ -281,7 +283,7 @@ export default function Cart({
                                 key={item.cantidad}
                                 initial={{ scale: 1.2 }}
                                 animate={{ scale: 1 }}
-                                className="px-2 text-[#3D1F00] font-semibold text-sm min-w-[1.5rem] text-center"
+                                className="px-2 text-marron-oscuro font-semibold text-sm min-w-[1.5rem] text-center"
                               >
                                 {item.cantidad}
                               </motion.span>
@@ -291,7 +293,7 @@ export default function Cart({
                                 }
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="p-1.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                                className="p-1.5 text-marron-oscuro/60 hover:text-marron-oscuro transition-colors"
                                 aria-label={`Agregar una unidad de ${item.productoNombre}`}
                               >
                                 <Plus className="w-3 h-3" />
@@ -321,7 +323,7 @@ export default function Cart({
                       key={total}
                       initial={{ scale: 1.1 }}
                       animate={{ scale: 1 }}
-                      className="text-2xl font-bold text-[#F5821F]"
+                      className="text-2xl font-bold text-naranja-mc"
                       style={{
                         fontFamily:
                           "var(--font-fredoka), system-ui, sans-serif",
@@ -371,9 +373,9 @@ export default function Cart({
               exit={{ scale: 0.9, opacity: 0 }}
               className="fixed inset-0 z-[60] flex items-center justify-center p-4"
             >
-              <div className="bg-gradient-to-br from-[#5C3410] to-[#3D1F00] border-2 border-[#F5821F]/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+              <div className="bg-marron-oscuro border-2 border-naranja-mc/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
                 <h3
-                  className="text-xl font-bold text-[#F5821F] mb-3"
+                  className="text-xl font-bold text-naranja-mc mb-3"
                   style={{
                     fontFamily: "var(--font-fredoka), system-ui, sans-serif",
                   }}

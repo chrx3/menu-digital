@@ -162,25 +162,23 @@ export default function ProductCard({
       className={`group relative h-full ${onSelectProduct ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-primary bg-primary/5 rounded-lg" : ""}`}
     >
       <motion.div
-        className="relative flex h-full min-h-[17.5rem] flex-col bg-crema/95 backdrop-blur-sm rounded-2xl overflow-hidden border border-marron-oscuro/10 hover:border-naranja-mc/40 transition-[box-shadow,border-color,transform] duration-300"
-        animate={{
-          scale: isHovered ? 1.02 : 1,
+        className="relative flex h-full min-h-[17.5rem] flex-col bg-white rounded-[20px] overflow-hidden border-0 transition-shadow duration-300"
+        style={{
           boxShadow: isHovered
-            ? "0 20px 40px rgba(245, 130, 31, 0.12)"
-            : "0 4px 6px rgba(0, 0, 0, 0.05)",
+            ? "var(--shadow-card-hover)"
+            : "var(--shadow-card)",
         }}
-        transition={{ duration: 0.3 }}
       >
         {imageSrc && <CardFloatingImage src={imageSrc} alt={producto.nombre} />}
 
-        <div className="relative z-10 flex flex-1 flex-col p-5">
+        <div className="relative z-10 flex flex-1 flex-col p-5 sm:p-6">
           {/* Título + ingredientes en columna */}
           <div className="mb-3 shrink-0 pr-[6.75rem] sm:pr-32 lg:pr-36">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-naranja-texto mb-0.5 leading-none">
               {categoria.titulo}
             </p>
             <h3
-              className="text-lg font-bold text-[#3D1F00] group-hover:text-[#F5821F] transition-colors duration-300 leading-snug"
+              className="text-lg font-bold text-marron-oscuro group-hover:text-naranja-mc transition-colors duration-300 leading-snug tracking-tight"
               style={{
                 fontFamily: "var(--font-fredoka), system-ui, sans-serif",
               }}
@@ -211,7 +209,7 @@ export default function ProductCard({
                   {producto.incluye.map((item) => (
                     <span
                       key={item}
-                      className="px-2 py-0.5 bg-[#F5821F]/10 text-naranja-texto text-xs rounded-full"
+                      className="px-2.5 py-1 bg-naranja-mc/8 text-naranja-texto text-xs rounded-full font-medium"
                     >
                       {item}
                     </span>
@@ -222,7 +220,7 @@ export default function ProductCard({
 
             {/* Detalle */}
             {producto.detalle && (
-              <p className="text-sm text-[#3D1F00]/50 mb-4">
+              <p className="text-sm text-marron-oscuro/50 mb-4">
                 {producto.detalle}
               </p>
             )}
@@ -230,7 +228,7 @@ export default function ProductCard({
             {/* Sándwich: estilo Completo o Italiano (solo ítem combinado) */}
             {isEstiloCombo && (
               <div className="mb-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
+                <p className="text-[10px] uppercase tracking-wider text-marron-oscuro/40 font-semibold mb-2">
                   {t(
                     "product.sandwichStyle",
                     producto.estiloNombre || "Estilo del sándwich",
@@ -250,8 +248,8 @@ export default function ProductCard({
                       px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
                       ${
                         selectedEstilo === opcion.value
-                          ? "bg-[#F5821F] text-white shadow-md shadow-[#F5821F]/25"
-                          : "bg-[#3D1F00]/5 text-[#3D1F00]/60 hover:text-[#3D1F00] hover:bg-[#3D1F00]/10 border border-[#3D1F00]/10"
+                          ? "bg-naranja-mc text-white shadow-md"
+                          : "bg-marron-oscuro/5 text-marron-oscuro/60 hover:text-marron-oscuro hover:bg-marron-oscuro/10 border border-marron-oscuro/10"
                       }
                     `}
                     >
@@ -265,7 +263,7 @@ export default function ProductCard({
             {/* Sándwiches: tipo de carne */}
             {isSandwich && carneOpciones.length > 0 && (
               <div className="mb-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
+                <p className="text-[10px] uppercase tracking-wider text-marron-oscuro/40 font-semibold mb-2">
                   {t(
                     "product.meatType",
                     categoria.opcionesNombre || "Tipo de carne",
@@ -283,8 +281,8 @@ export default function ProductCard({
                       px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
                       ${
                         selectedVariante === variante.value
-                          ? "bg-[#F5821F] text-white shadow-md shadow-[#F5821F]/25"
-                          : "bg-[#3D1F00]/5 text-[#3D1F00]/60 hover:text-[#3D1F00] hover:bg-[#3D1F00]/10 border border-[#3D1F00]/10"
+                          ? "bg-naranja-mc text-white shadow-md"
+                          : "bg-marron-oscuro/5 text-marron-oscuro/60 hover:text-marron-oscuro hover:bg-marron-oscuro/10 border border-marron-oscuro/10"
                       }
                     `}
                     >
@@ -298,7 +296,7 @@ export default function ProductCard({
             {/* Otras categorías: tamaño, proteína, etc. */}
             {!isSandwich && variantes.length > 1 && (
               <div className="mb-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#3D1F00]/40 font-semibold mb-2">
+                <p className="text-[10px] uppercase tracking-wider text-marron-oscuro/40 font-semibold mb-2">
                   {t(
                     "product.chooseOption",
                     categoria.opcionesNombre || "Elige tu opción",
@@ -316,8 +314,8 @@ export default function ProductCard({
                       px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
                       ${
                         selectedVariante === variante.value
-                          ? "bg-[#F5821F] text-white shadow-md shadow-[#F5821F]/25"
-                          : "bg-[#3D1F00]/5 text-[#3D1F00]/60 hover:text-[#3D1F00] hover:bg-[#3D1F00]/10 border border-[#3D1F00]/10"
+                          ? "bg-naranja-mc text-white shadow-md"
+                          : "bg-marron-oscuro/5 text-marron-oscuro/60 hover:text-marron-oscuro hover:bg-marron-oscuro/10 border border-marron-oscuro/10"
                       }
                     `}
                     >
@@ -333,7 +331,7 @@ export default function ProductCard({
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-4 p-2 bg-[#F5821F]/8 rounded-lg border border-[#F5821F]/20"
+                className="mb-4 p-2.5 bg-naranja-mc/8 rounded-xl border border-naranja-mc/15"
               >
                 <div className="flex items-center gap-2">
                   <Tag className="w-3.5 h-3.5 text-naranja-texto" />
@@ -366,13 +364,13 @@ export default function ProductCard({
                     initial={{ opacity: 0, scale: 0.8, width: 0 }}
                     animate={{ opacity: 1, scale: 1, width: "auto" }}
                     exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    className="flex items-center bg-[#F5821F]/10 rounded-xl overflow-hidden"
+                    className="flex items-center bg-naranja-mc/10 rounded-xl overflow-hidden"
                   >
                     <motion.button
                       onClick={() => handleQuantityChange(-1)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-2.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                      className="p-2.5 text-marron-oscuro/60 hover:text-marron-oscuro transition-colors"
                       aria-label={`Quitar una unidad de ${producto.nombre}`}
                     >
                       <Minus className="w-4 h-4" />
@@ -381,7 +379,7 @@ export default function ProductCard({
                       key={quantity}
                       initial={{ scale: 1.3, color: "#994500" }}
                       animate={{ scale: 1, color: "#3D1F00" }}
-                      className="px-2 text-[#3D1F00] font-bold min-w-[1.5rem] text-center text-sm"
+                      className="px-2 text-marron-oscuro font-bold min-w-[1.5rem] text-center text-sm"
                     >
                       {quantity}
                     </motion.span>
@@ -389,7 +387,7 @@ export default function ProductCard({
                       onClick={() => handleQuantityChange(1)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="p-2.5 text-[#3D1F00]/60 hover:text-[#3D1F00] transition-colors"
+                      className="p-2.5 text-marron-oscuro/60 hover:text-marron-oscuro transition-colors"
                       aria-label={`Agregar una unidad de ${producto.nombre}`}
                     >
                       <Plus className="w-4 h-4" />
@@ -403,9 +401,9 @@ export default function ProductCard({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="relative w-11 h-11 flex items-center justify-center bg-[#F5821F] text-white rounded-full shadow-lg shadow-[#F5821F]/30 disabled:opacity-70"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative w-11 h-11 flex items-center justify-center bg-naranja-mc text-white rounded-full shadow-md disabled:opacity-70 hover:bg-naranja-intenso transition-colors duration-200"
                     aria-label={`Agregar ${producto.nombre} al carrito`}
                   >
                     <AnimatePresence mode="wait">
@@ -438,8 +436,8 @@ export default function ProductCard({
                           className="relative w-full h-full flex items-center justify-center"
                         >
                           <ShoppingCart className="w-5 h-5 relative z-10" />
-                          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#3D1F00] rounded-full flex items-center justify-center border-2 border-[#F5821F] z-20">
-                            <Plus className="w-2.5 h-2.5 text-[#F5821F]" />
+                          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-marron-oscuro rounded-full flex items-center justify-center border-2 border-naranja-mc z-20">
+                            <Plus className="w-2.5 h-2.5 text-naranja-mc" />
                           </div>
                         </motion.div>
                       )}
